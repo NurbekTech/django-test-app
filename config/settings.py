@@ -11,6 +11,8 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS").split(",")
 
 
+# Applications
+# ----------------------------------------------------------------------------------------------------------------------
 INSTALLED_APPS = [
     "admin_interface",
     "colorfield",
@@ -23,7 +25,8 @@ INSTALLED_APPS = [
     "tailwind",
     "ui",
     "core.apps.CoreConfig",
-    # --------APPS---------
+
+    # apps...
     "apps.main.apps.MainConfig",
 ]
 
@@ -38,11 +41,15 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEBUG:
+    INSTALLED_APPS += ["django_browser_reload"]
+    MIDDLEWARE += [
+        "django_browser_reload.middleware.BrowserReloadMiddleware",
+    ]
 
 ROOT_URLCONF = "config.urls"
 AUTH_USER_MODEL = "core.User"
 WSGI_APPLICATION = "config.wsgi.application"
-
 
 TEMPLATES = [
     {
@@ -61,8 +68,7 @@ TEMPLATES = [
 
 
 # DATABASE
-# ------------------------------------------------------------
-
+# ----------------------------------------------------------------------------------------------------------------------
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql_psycopg2",
@@ -76,8 +82,7 @@ DATABASES = {
 
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
+# ----------------------------------------------------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -95,8 +100,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# --------------------------------------------------------
-
+# ----------------------------------------------------------------------------------------------------------------------
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Almaty"
 USE_I18N = True
@@ -112,8 +116,7 @@ LOCALE_PATHS = [BASE_DIR / "locales"]
 
 
 # Static files (CSS, JavaScript, Images)
-# -------------------------------------------------------
-
+# ----------------------------------------------------------------------------------------------------------------------
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
 MEDIA_URL = "media/"
@@ -123,13 +126,12 @@ STATICFILES_DIRS = [BASE_DIR / "ui/static"]
 
 
 # Tailwind settings
-# --------------------------------------------------------
-
+# ----------------------------------------------------------------------------------------------------------------------
 TAILWIND_APP_NAME = "ui"
-NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
+# NPM_BIN_PATH = r"/home/mukhagaliaryn/.nvm/versions/node/v24.11.0/bin/node"
 
 
 # CORS Settings
-# -------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 X_FRAME_OPTIONS = "SAMEORIGIN"
 SILENCED_SYSTEM_CHECKS = ["security.W019"]
