@@ -1,14 +1,17 @@
 from django.contrib import admin
+from django.contrib.admin import register
 from django.contrib.auth.admin import UserAdmin as UserModelAdmin
 from django.contrib.auth.models import Group
 from core.models import User
 
 
+@register(User)
 class UserAdmin(UserModelAdmin):
     model = User
     list_display = (
         "username",
         "email",
+        'iin',
         "first_name",
         "last_name",
         "is_staff",
@@ -33,6 +36,7 @@ class UserAdmin(UserModelAdmin):
                     "avatar",
                     "username",
                     "email",
+                    'iin',
                     "first_name",
                     "last_name",
                     "password",
@@ -54,6 +58,7 @@ class UserAdmin(UserModelAdmin):
                 "fields": (
                     "username",
                     "email",
+                    'iin',
                     "first_name",
                     "last_name",
                     "password1",
@@ -64,5 +69,4 @@ class UserAdmin(UserModelAdmin):
     )
 
 
-admin.site.register(User, UserAdmin)
 admin.site.unregister(Group)

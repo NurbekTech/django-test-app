@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "ckeditor",
     "tailwind",
     "ui",
     "core.apps.CoreConfig",
@@ -128,10 +129,35 @@ STATICFILES_DIRS = [BASE_DIR / "ui/static"]
 # Tailwind settings
 # ----------------------------------------------------------------------------------------------------------------------
 TAILWIND_APP_NAME = "ui"
-# NPM_BIN_PATH = r"/home/mukhagaliaryn/.nvm/versions/node/v24.11.0/bin/node"
 
 
 # CORS Settings
 # ----------------------------------------------------------------------------------------------------------------------
 X_FRAME_OPTIONS = "SAMEORIGIN"
 SILENCED_SYSTEM_CHECKS = ["security.W019"]
+
+
+# Authentication settings
+# ----------------------------------------------------------------------------------------------------------------------
+AUTHENTICATION_BACKENDS = [
+    "core.utils.db.backends.EmailOrIINBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+
+
+# CKEditor settings
+# ----------------------------------------------------------------------------------------------------------------------
+CKEDITOR_UPLOAD_PATH = "uploads/"
+
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'Custom',
+        'toolbar_Custom': [
+            ['Bold', 'Italic', 'Underline'],
+            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
+            ['Link', 'Unlink'],
+            ['RemoveFormat', 'Source']
+        ]
+    }
+}
