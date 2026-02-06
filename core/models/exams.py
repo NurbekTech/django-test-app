@@ -2,25 +2,26 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-
+# ======================================================================================================================
 # Exam models
-# ----------------------------------------------------------------------------------------------------------------------
+# ======================================================================================================================
 # Exam
 class Exam(models.Model):
-    title = models.CharField(_('Тақырыбы'), max_length=255)
-    description = models.TextField(_('Анықтама'), blank=True, null=True)
-    is_published = models.BooleanField(_('Ашық емтихан'), default=True)
-    created_at = models.DateTimeField(_('Жасалған уақыты'), auto_now_add=True)
+    title = models.CharField(_("Тақырыбы"), max_length=255)
+    description = models.TextField(_("Анықтама"), blank=True, null=True)
+    is_published = models.BooleanField(_("Ашық емтихан"), default=True)
+    created_at = models.DateTimeField(_("Жасалған уақыты"), auto_now_add=True)
 
     class Meta:
-        verbose_name = _('Емтихан')
-        verbose_name_plural = _('Емтихандар')
+        verbose_name = _("Емтихан")
+        verbose_name_plural = _("Емтихандар")
 
     def __str__(self):
         return self.title
 
 
 # ExamSection
+# ======================================================================================================================
 class ExamSection(models.Model):
     class SectionType(models.TextChoices):
         LISTENING = "listening", _("Тыңдалым (Listening)")
@@ -40,7 +41,7 @@ class ExamSection(models.Model):
     )
     max_score = models.PositiveSmallIntegerField(_("Макс. баллы"), default=0)
     time_limit_seconds = models.PositiveSmallIntegerField(_("Уақыты (сек)"), default=0)
-    order = models.PositiveSmallIntegerField(_('Реттілік'), default=1)
+    order = models.PositiveSmallIntegerField(_("Реттілік"), default=1)
 
     class Meta:
         verbose_name = _("Емтихан секциясы")
@@ -51,6 +52,7 @@ class ExamSection(models.Model):
 
 
 # ExamSectionMaterial
+# ======================================================================================================================
 class ExamSectionMaterial(models.Model):
     section = models.ForeignKey(
         ExamSection, on_delete=models.CASCADE,
@@ -69,6 +71,7 @@ class ExamSectionMaterial(models.Model):
 
 
 # Question
+# ======================================================================================================================
 class Question(models.Model):
     class QuestionType(models.TextChoices):
         MCQ_SINGLE = "mcq_single", _("Бір жауапты")
@@ -80,14 +83,9 @@ class Question(models.Model):
         ExamSection, on_delete=models.CASCADE,
         related_name="questions", verbose_name=_("Емтихан секциясы")
     )
-    material = models.ForeignKey(
-        ExamSectionMaterial, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name="questions", verbose_name=_("Секция материалы")
-    )
     question_type = models.CharField(_("Сұрақ типі"), max_length=32, choices=QuestionType.choices)
     prompt = models.TextField(_("Берілгені"))
-
-    points = models.PositiveSmallIntegerField(_("Points"), default=1)
+    points = models.PositiveSmallIntegerField(_("Ұпай"), default=1)
 
     def __str__(self):
         return self.prompt[:60]
@@ -97,8 +95,9 @@ class Question(models.Model):
         verbose_name_plural = _("Сұрақтар")
 
 
+# ======================================================================================================================
 # Question type
-# ----------------------------------------------------------------------------------------------------------------------
+# ======================================================================================================================
 # Option
 class Option(models.Model):
     question = models.ForeignKey(
@@ -113,6 +112,7 @@ class Option(models.Model):
 
 
 # Speaking
+# ======================================================================================================================
 class SpeakingRubric(models.Model):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE,
@@ -127,5 +127,27 @@ class SpeakingRubric(models.Model):
 
 
 # Writing
+# ======================================================================================================================
 class PracticalTask(models.Model):
-    pass
+    question = models.OneToOneField(
+        Question, on_delete=models.CASCADE,
+        related_name="practical_task", verbose_name=_("Сұрақ")
+    )
+    input_spec = models.TextField(blank=True)
+    output_spec = models.TextField(blank=True)
+    sample_input = models.TextField(blank=True)
+    sample_output = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.pk
+
+
+class PracticalTestCase(models.Model):
+    task = models.ForeignKey(
+        PracticalTask, on_delete=models.CASCADE,
+        related_name="test_cases", verbose_name=_("Тапсырма")
+    )
+    input_data = models.TextField(_("Дерек енгізу"))
+    expected_output = models.TextField()
+    is_public = models.BooleanField(default=False)
+    weight = models.PositiveIntegerField(default=1)

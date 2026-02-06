@@ -55,7 +55,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "ui/template"],
+        "DIRS": [BASE_DIR / "ui/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -145,19 +145,59 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-
 # CKEditor settings
 # ----------------------------------------------------------------------------------------------------------------------
 CKEDITOR_UPLOAD_PATH = "uploads/"
 
 CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'Custom',
-        'toolbar_Custom': [
-            ['Bold', 'Italic', 'Underline'],
-            ['NumberedList', 'BulletedList', '-', 'Outdent', 'Indent', '-', 'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock'],
-            ['Link', 'Unlink'],
-            ['RemoveFormat', 'Source']
-        ]
+    "default": {
+        "skin": "moono-lisa",
+        "defaultLanguage": "ru",
+        "width": 840,
+        "height": 420,
+        "removePlugins": "autogrow",
+
+        "autogrow": [
+            {
+                "autogrow": "styles",
+                "items": ["Format"]
+            },
+            {
+                "name": "basicstyles",
+                "items": ["Bold", "Italic", "Underline", "-", "RemoveFormat"]
+            },
+            {
+                "name": "paragraph",
+                "items": [
+                    "NumberedList", "BulletedList", "-",
+                    'JustifyLeft', 'JustifyCenter', 'JustifyRight', 'JustifyBlock',
+                ]
+            },
+            {
+                'name': 'insert',
+                'items': ['Image', 'Table', 'Mathjax', ]
+            },
+            {
+                'name': 'document',
+                'items': ['Source', '-', 'Preview', '-', 'Maximize']
+            },
+        ],
+        'format_tags': 'p;h2;h3;h4',
+        'mathJaxLib': 'https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS_HTML',
+        'tabSpaces': 4,
+
+        'image_upload_url': '/ckeditor/upload/',
+        'filebrowserUploadUrl': '/ckeditor/upload/',
+        'filebrowserBrowseUrl': '/ckeditor/browse/',
+
+        'extraPlugins': ','.join([
+            'mathjax',
+            'uploadimage',
+            'autogrow',
+            'clipboard',
+            'dialog',
+            'dialogui',
+            'elementspath',
+        ]),
     }
 }
