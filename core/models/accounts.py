@@ -11,11 +11,11 @@ class User(AbstractUser):
         MANAGER = "manager", _("Менеджер")
 
     avatar = models.ImageField(_("Аватар"), upload_to="accounts/users/avatars", null=True, blank=True)
-    iin = models.CharField(_("Аватар"), max_length=36, unique=True)
+    iin = models.CharField(_("ЖСН (ИИН)"), max_length=36, unique=True)
     role = models.CharField(_("Типі"), max_length=16, choices=UserRoles.choices, default=UserRoles.CUSTOMER)
 
     def __str__(self):
-        return f"{self.first_name} + {self.last_name}"
+        return self.get_full_name() or self.username
 
     class Meta:
         verbose_name = _("Қолданушы")
