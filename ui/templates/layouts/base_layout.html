@@ -18,7 +18,7 @@
                         </path>
                     </svg>
                 </button>
-                <a href="{% url 'customer:dashboard' %}" class="flex ms-2 md:me-24">
+                <a href="{% url 'main:dashboard' %}" class="flex ms-2 md:me-24">
                     <img src="{% static 'images/full-logo.svg' %}" class="w-32" alt="TestApp Logo" />
                 </a>
             </div>
@@ -44,25 +44,33 @@
                             {% endif %}
                         </button>
                     </div>
-                    <div class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-sm shadow-sm dark:bg-gray-700 dark:divide-gray-600"
-                        id="dropdown-user">
+                    <div 
+                        class="z-50 hidden my-4 list-none bg-white divide-y divide-secondary-100 shadow-sm rounded-xl"
+                        id="dropdown-user"
+                    >
                         <div class="px-4 py-3" role="none">
-                            <p class="text-sm text-gray-900 dark:text-white" role="none">
+                            <h1 class="font-semibold text-base" role="none">
                                 {{ user.first_name }} {{ user.last_name }}
-                            </p>
-                            <p class="text-sm font-medium text-gray-900 truncate dark:text-gray-300" role="none">
+                            </h1>
+                            <p class="font-medium truncate text-blue-600 mb-1" role="none">
                                 {{ user.email }}
                             </p>
                         </div>
                         <ul class="py-1" role="none">
                             <li>
-                                <form 
-                                    action="{% url 'main:logout' %}" 
-                                    method="post" 
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white" role="menuitem"
-                                >
+                                <a href="{% url 'main:account' %}"
+                                    class="block px-4 py-2 font-medium hover:bg-secondary-100"
+                                    role="menuitem">Аккаунт</a>
+                            </li>
+                            <li>
+                                <a href="{% url 'main:settings' %}"
+                                    class="block px-4 py-2 font-medium hover:bg-secondary-100"
+                                    role="menuitem">Баптаулар</a>
+                            </li>
+                            <li>
+                                <form action="{% url 'main:logout' %}" method="post">
                                     {% csrf_token %}
-                                    <button type="submit" class="w-full text-left">Жүйеден шығу</button>
+                                    <button type="submit" class="w-full cursor-pointer text-left block px-4 py-2 font-medium hover:bg-secondary-100">Шығу</button>
                                 </form>
                             </li>
                         </ul>
@@ -73,13 +81,15 @@
     </div>
 </nav>
 
-<aside id="logo-sidebar"
-    class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700"
-    aria-label="Sidebar">
-    <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
+<aside 
+    id="logo-sidebar"
+    class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0"
+    aria-label="Sidebar"
+>
+    <div class="h-full px-3 pb-4 overflow-y-auto bg-white">
         <ul class="space-y-2 font-medium">
             <li>
-                <a href="{% url 'customer:dashboard' %}"
+                <a href="{% url 'main:dashboard' %}"
                     class="flex items-center p-2 text-gray-900 rounded-lg group">
                     <svg class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
                         aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
@@ -92,7 +102,7 @@
                 </a>
             </li>
             <li>
-                <a href="#"
+                <a href="{% url 'main:exams' %}"
                     class="flex items-center p-2 text-gray-900 rounded-lg group">
                     <svg class="shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
                         aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
@@ -107,7 +117,7 @@
 </aside>
 
 <div class="p-4 sm:ml-64 mt-14">
-    {% block customer_layout %}
-    {% endblock customer_layout %}
+    {% block base_layout %}
+    {% endblock base_layout %}
 </div>
 {% endblock base %}

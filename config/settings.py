@@ -30,7 +30,7 @@ INSTALLED_APPS = [
 
     # apps...
     "apps.main.apps.MainConfig",
-    "apps.customer.apps.CustomerConfig",
+    "apps.manager.apps.ManagerConfig",
 ]
 
 MIDDLEWARE = [

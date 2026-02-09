@@ -10,14 +10,14 @@ from apps.main.forms import UserRegisterForm
 # ======================================================================================================================
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("customer:dashboard")
+        return redirect("main:dashboard")
 
     if request.method == "POST":
         form = AuthenticationForm(data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect("customer:dashboard")
+            return redirect("main:dashboard")
         else:
             messages.error(request, _("Пайдаланушының аты немесе пароль қате кетті!"))
     else:
@@ -30,14 +30,14 @@ def login_view(request):
 # ======================================================================================================================
 def register_view(request):
     if request.user.is_authenticated:
-        return redirect("customer:dashboard")
+        return redirect("main:dashboard")
 
     if request.method == "POST":
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-            return redirect("customer:dashboard")
+            return redirect("main:dashboard")
         else:
             messages.error(request, _("Тіркеу сәтсіз аяқталды. Деректерді тексеріңіз!"))
     else:
