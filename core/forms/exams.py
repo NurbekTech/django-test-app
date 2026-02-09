@@ -1,7 +1,7 @@
 from ckeditor.widgets import CKEditorWidget
 from django import forms
 from django.core.exceptions import ValidationError
-from core.models import Exam, Question, Option, ExamSectionMaterial, SpeakingRubric
+from core.models import Exam, Question, Option, SectionMaterial, SpeakingRubric
 
 
 # Exam
@@ -15,11 +15,11 @@ class ExamAdminForm(forms.ModelForm):
         }
 
 
-# ExamSectionMaterial
+# SectionMaterial
 # ======================================================================================================================
-class ExamSectionMaterialAdminForm(forms.ModelForm):
+class SectionMaterialAdminForm(forms.ModelForm):
     class Meta:
-        model = ExamSectionMaterial
+        model = SectionMaterial
         fields = "__all__"
         widgets = {
             "text": CKEditorWidget(config_name="default"),

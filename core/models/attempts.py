@@ -35,10 +35,6 @@ class ExamAttempt(models.Model):
     class Meta:
         verbose_name = _("Емтихан тапсыру")
         verbose_name_plural = _("Емтихан тапсырулар")
-        indexes = [
-            models.Index(fields=["user", "exam", "started_at"]),
-            models.Index(fields=["status"]),
-        ]
 
     def __str__(self):
         return f"Attempt#{self.pk} {self.user} - {self.exam}"
@@ -56,7 +52,7 @@ class SectionAttempt(models.Model):
         related_name="section_attempts", verbose_name=_("Емтихан тапсыру"),
     )
     section = models.ForeignKey(
-        "ExamSection", on_delete=models.CASCADE,
+        "Section", on_delete=models.CASCADE,
         related_name="attempts", verbose_name=_("Емтихан секциясы"),
     )
     status = models.CharField(_("Статус"), max_length=16, choices=AttemptStatus.choices, default=AttemptStatus.DRAFT)
@@ -69,16 +65,6 @@ class SectionAttempt(models.Model):
     class Meta:
         verbose_name = _("Секция тапсыруы")
         verbose_name_plural = _("Секция тапсырулары")
-        constraints = [
-            models.UniqueConstraint(
-                fields=["attempt", "section"],
-                name="uniq_section_attempt_per_attempt",
-            )
-        ]
-        indexes = [
-            models.Index(fields=["attempt", "section"]),
-            models.Index(fields=["status"]),
-        ]
 
     def __str__(self):
         return f"{self.attempt} / {self.section}"
@@ -105,16 +91,6 @@ class QuestionAttempt(models.Model):
     class Meta:
         verbose_name = _("Сұрақ жауабы")
         verbose_name_plural = _("Сұрақ жауаптары")
-        constraints = [
-            models.UniqueConstraint(
-                fields=["section_attempt", "question"],
-                name="uniq_question_attempt_per_section_attempt",
-            )
-        ]
-        indexes = [
-            models.Index(fields=["section_attempt", "question"]),
-            models.Index(fields=["is_answered", "is_graded"]),
-        ]
 
     def __str__(self):
         return f"QA#{self.pk} {self.question_id}"
@@ -191,9 +167,3 @@ class MCQSelection(models.Model):
     class Meta:
         verbose_name = _("MCQ таңдау")
         verbose_name_plural = _("MCQ таңдаулар")
-        constraints = [
-            models.UniqueConstraint(
-                fields=["question_attempt", "option"],
-                name="uniq_mcq_selection",
-            )
-        ]

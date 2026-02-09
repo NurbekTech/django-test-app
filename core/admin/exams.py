@@ -1,20 +1,19 @@
 from django.contrib import admin
 from django.contrib.admin import register
 from django.utils.safestring import mark_safe
-
 from core.admin._mixins import LinkedAdminMixin
-from core.forms.exams import ExamAdminForm, ExamSectionMaterialAdminForm, QuestionAdminForm, OptionAdminForm, \
+from core.forms.exams import ExamAdminForm, SectionMaterialAdminForm, QuestionAdminForm, OptionAdminForm, \
     SpeakingRubricAdminForm
-from core.models import Exam, ExamSection, ExamSectionMaterial, Question, Option, PracticalTestCase, SpeakingRubric
+from core.models import Exam, Section, SectionMaterial, Question, Option, WritingTestCase, SpeakingRubric
 from django.utils.translation import gettext_lazy as _
 
 
 # ======================================================================================================================
 # Exam
 # ======================================================================================================================
-# ExamSectionInline
-class ExamSectionInline(LinkedAdminMixin, admin.TabularInline):
-    model = ExamSection
+# SectionInline
+class SectionInline(LinkedAdminMixin, admin.TabularInline):
+    model = Section
     extra = 0
     readonly_fields = ("detail_link", )
 
@@ -31,17 +30,17 @@ class ExamAdmin(admin.ModelAdmin):
     search_fields = ("title", )
     form = ExamAdminForm
 
-    inlines = (ExamSectionInline, )
+    inlines = (SectionInline, )
 
 
 # ======================================================================================================================
-# ExamSection
+# Section
 # ======================================================================================================================
-# ExamSectionMaterialInline
-class ExamSectionMaterialInline(LinkedAdminMixin, admin.StackedInline):
-    model = ExamSectionMaterial
+# SectionMaterialInline
+class SectionMaterialInline(LinkedAdminMixin, admin.StackedInline):
+    model = SectionMaterial
     extra = 0
-    form = ExamSectionMaterialAdminForm
+    form = SectionMaterialAdminForm
 
 
 # QuestionInline
@@ -56,9 +55,9 @@ class QuestionInline(LinkedAdminMixin, admin.TabularInline):
     detail_link.short_description = _("Сілтеме")
 
 
-# ExamSectionAdmin
-@register(ExamSection)
-class ExamSectionAdmin(LinkedAdminMixin, admin.ModelAdmin):
+# SectionAdmin
+@register(Section)
+class SectionAdmin(LinkedAdminMixin, admin.ModelAdmin):
     list_display = ("section_type", "max_score", )
     list_filter = ("section_type", )
     readonly_fields = ("exam_link", )
@@ -67,7 +66,7 @@ class ExamSectionAdmin(LinkedAdminMixin, admin.ModelAdmin):
         return self.parent_link(obj, 'exam')
     exam_link.short_description = _("Емтихан")
 
-    inlines = (ExamSectionMaterialInline, QuestionInline, )
+    inlines = (SectionMaterialInline, QuestionInline, )
 
     def get_inline_instances(self, request, obj=None):
         inline_instances = super().get_inline_instances(request, obj)
@@ -75,12 +74,12 @@ class ExamSectionAdmin(LinkedAdminMixin, admin.ModelAdmin):
             return []
 
         if obj.section_type in (
-                ExamSection.SectionType.LISTENING,
-                ExamSection.SectionType.READING,
+                Section.SectionType.LISTENING,
+                Section.SectionType.READING,
         ):
             return inline_instances
 
-        return [inl for inl in inline_instances if inl.__class__ is not ExamSectionMaterialInline]
+        return [inl for inl in inline_instances if inl.__class__ is not SectionMaterialInline]
 
 
 # ======================================================================================================================
@@ -100,15 +99,10 @@ class SpeakingRubricInline(admin.StackedInline):
     form = SpeakingRubricAdminForm
 
 
-# PracticalTestCaseInline
-class PracticalTestCaseInline(LinkedAdminMixin, admin.StackedInline):
-    model = PracticalTestCase
+# WritingTestCaseInline
+class WritingTestCaseInline(admin.StackedInline):
+    model = WritingTestCase
     extra = 0
-    readonly_fields = ("detail_link", )
-
-    def detail_link(self, obj):
-        return self.admin_link(obj, label=_("Толығырақ"))
-    detail_link.short_description = _("Сілтеме")
 
 
 # QuestionAdmin
@@ -128,7 +122,7 @@ class QuestionAdmin(LinkedAdminMixin, admin.ModelAdmin):
         return self.parent_link(obj, "section")
     section_link.short_description = _("Емтихан")
 
-    inlines = [OptionInline, PracticalTestCaseInline, SpeakingRubricInline]
+    inlines = [OptionInline, WritingTestCaseInline, SpeakingRubricInline]
 
     def get_inline_instances(self, request, obj=None):
         inline_instances = super().get_inline_instances(request, obj)
@@ -141,25 +135,9 @@ class QuestionAdmin(LinkedAdminMixin, admin.ModelAdmin):
 
         if qt in (Question.QuestionType.MCQ_SINGLE, Question.QuestionType.MCQ_MULTI):
             allowed.add(OptionInline)
-
         if qt == Question.QuestionType.SPEAKING_KEYWORDS:
             allowed.add(SpeakingRubricInline)
-
         if qt == Question.QuestionType.PRACTICAL_CODE:
-            allowed.add(PracticalTestCaseInline)
+            allowed.add(WritingTestCaseInline)
 
         return [inl for inl in inline_instances if inl.__class__ in allowed]
-
-
-# ======================================================================================================================
-# PracticalTaskAdmin
-# ======================================================================================================================
-@admin.register(PracticalTestCase)
-class PracticalTestCaseAdmin(LinkedAdminMixin, admin.ModelAdmin):
-    list_display = ("question", "is_public", "weight" )
-    search_fields = ("question__prompt", )
-    readonly_fields = ("question_link", )
-
-    def question_link(self, obj):
-        return self.parent_link(obj, "question")
-    question_link.short_description = _("Сұрақ")
