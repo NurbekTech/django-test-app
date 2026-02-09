@@ -1,5 +1,6 @@
 from pathlib import Path
 from decouple import config
+from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 
 
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
 
     # apps...
     "apps.main.apps.MainConfig",
+    "apps.customer.apps.CustomerConfig",
 ]
 
 MIDDLEWARE = [
@@ -130,6 +132,16 @@ STATICFILES_DIRS = [BASE_DIR / "ui/static"]
 # ----------------------------------------------------------------------------------------------------------------------
 TAILWIND_APP_NAME = "ui"
 
+# Messages
+MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
+
+MESSAGE_TAGS = {
+    messages.SUCCESS: 'text-green-600',
+    messages.WARNING: 'text-amber-600',
+    messages.INFO: 'text-blue-600',
+    messages.ERROR: 'text-red-600',
+}
+
 
 # CORS Settings
 # ----------------------------------------------------------------------------------------------------------------------
@@ -140,9 +152,13 @@ SILENCED_SYSTEM_CHECKS = ["security.W019"]
 # Authentication settings
 # ----------------------------------------------------------------------------------------------------------------------
 AUTHENTICATION_BACKENDS = [
-    "core.utils.db.backends.EmailOrIINBackend",
     "django.contrib.auth.backends.ModelBackend",
+    "core.utils.db.backends.EmailOrIINBackend",
 ]
+
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/auth/login/'
+LOGIN_URL = '/auth/login/'
 
 
 # CKEditor settings

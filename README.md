@@ -1,7 +1,7 @@
 <p align="center">
     <img 
         src="ui/static/images/logo.png" 
-        alt="Biomedia Logo" width="140" 
+        alt="Biomedia Logo" width="64" 
     />
 </p>
 <h3 align="center">TestApp</h3>
@@ -11,4 +11,4 @@
 
 
 ## TestApp
-Тест тапсыру порталы
+Тест тапсыру платформасы
