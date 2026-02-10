@@ -9,10 +9,10 @@ from django.utils.translation import gettext_lazy as _
 # ======================================================================================================================
 # AttemptStatus
 class AttemptStatus(models.TextChoices):
-    DRAFT = "draft", _("Басталды")
-    SUBMITTED = "submitted", _("Жіберілді")
-    GRADED = "graded", _("Бағаланды")
-    CANCELLED = "cancelled", _("Болдырылмады")
+    NO_STARTED = "no_started", "Басталмаған"
+    IN_PROGRESS = "in_progress", "Тест өтіп жатыр"
+    FINISHED = "finished", "Аяқталды"
+    ABORTED = "aborted", "Тоқтатылды"
 
 
 # ExamAttempt
@@ -25,7 +25,7 @@ class ExamAttempt(models.Model):
         "Exam", on_delete=models.CASCADE,
         related_name="attempts", verbose_name=_("Емтихан"),
     )
-    status = models.CharField(_("Статус"), max_length=16, choices=AttemptStatus.choices, default=AttemptStatus.DRAFT)
+    status = models.CharField(_("Статус"), max_length=16, choices=AttemptStatus.choices, default=AttemptStatus.NO_STARTED)
     started_at = models.DateTimeField(_("Басталған уақыты"), default=timezone.now)
     finished_at = models.DateTimeField(_("Аяқталған уақыты"), blank=True, null=True)
     total_score = models.DecimalField(_("Жалпы балл"), max_digits=7, decimal_places=2, default=0)
@@ -55,7 +55,7 @@ class SectionAttempt(models.Model):
         "Section", on_delete=models.CASCADE,
         related_name="attempts", verbose_name=_("Емтихан секциясы"),
     )
-    status = models.CharField(_("Статус"), max_length=16, choices=AttemptStatus.choices, default=AttemptStatus.DRAFT)
+    status = models.CharField(_("Статус"), max_length=16, choices=AttemptStatus.choices, default=AttemptStatus.NO_STARTED)
     started_at = models.DateTimeField(_("Басталған уақыты"), blank=True, null=True)
     finished_at = models.DateTimeField(_("Аяқталған уақыты"), blank=True, null=True)
     score = models.DecimalField(_("Секция баллы"), max_digits=7, decimal_places=2, default=0)

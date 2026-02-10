@@ -15,7 +15,7 @@
         </a>
     {% endfor %}
 
-    <form method="post" action="{% url 'main:attempt_submit' attempt.id %}" class="pt-3">
+    <form method="post" action="{% url 'customer:attempt_submit' attempt.id %}" class="pt-3">
         {% csrf_token %}
         <button type="submit"
             class="w-full px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:opacity-90">

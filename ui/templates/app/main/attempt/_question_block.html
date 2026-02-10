@@ -3,8 +3,8 @@
 <div class="border rounded-2xl p-4 bg-white">
     <div class="flex items-start justify-between gap-3">
         <div>
-            <div class="text-sm font-semibold">
-                {{ q.order }}. {{ q.prompt }}
+            <div class="flex gap-2 items-start font-semibold">
+                {{ q.order }}. {{ q.prompt|safe }}
             </div>
             <div class="text-xs text-gray-500 mt-1">
                 Түрі: {{ q.get_question_type_display }} • Ұпай: {{ q.points }}

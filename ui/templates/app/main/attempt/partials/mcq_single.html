@@ -1,7 +1,7 @@
 {% load dict_extras %}
 
 {% with qa=qa_by_qid|get_item:q.id %}
-  <form method="post" action="{% url 'main:attempt_answer' attempt.id q.id %}">
+  <form method="post" action="{% url 'customer:attempt_answer' attempt.id q.id %}">
     {% csrf_token %}
 
     <div class="space-y-2">
@@ -25,7 +25,7 @@
                                     {% if readonly %}disabled{% endif %}
                                     class="mt-1" 
                                 />
-                                <div class="text-sm">{{ opt.text }}</div>
+                                <div class="text-sm">{{ opt.text|safe }}</div>
                             </label>
                         {% endwith %}
                     {% endwith %}

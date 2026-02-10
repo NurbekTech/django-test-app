@@ -39,6 +39,7 @@ class Section(models.Model):
         choices=SectionType.choices, default=SectionType.LISTENING
     )
     max_score = models.PositiveSmallIntegerField(_("Макс. баллы"), default=0)
+    time_limit = models.PositiveSmallIntegerField(_("Уақыты (мин)"), default=0)
     order = models.PositiveSmallIntegerField(_("Реттілік"), default=1)
 
     class Meta:
