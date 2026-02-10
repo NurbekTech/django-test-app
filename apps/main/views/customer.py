@@ -2,9 +2,10 @@ from django.db.models import OuterRef, Exists, Prefetch
 from django.db.models.aggregates import Avg
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
+from django.views.decorators.http import require_GET
 
 from core.utils.decorators import role_required
-from core.models import ExamAttempt, SectionAttempt, Exam, Section, Question
+from core.models import ExamAttempt, SectionAttempt, Exam, Section, Question, AttemptStatus
 
 
 @role_required("customer")
@@ -153,9 +154,3 @@ def customer_exam_start_view(request, exam_id: int):
     )
 
     return redirect("main:attempt_detail", attempt_id=attempt.pk)
-
-
-@role_required("customer")
-def attempt_detail_view(request, attempt_id: int):
-    attempt = get_object_or_404(ExamAttempt, pk=attempt_id, user=request.user)
-    return render(request, "app/exams/attempt/page.html", {"attempt": attempt})

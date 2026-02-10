@@ -33,11 +33,11 @@ class ExamAttempt(models.Model):
     meta = models.JSONField(_("Қосымша дерек"), default=dict, blank=True)
 
     class Meta:
-        verbose_name = _("Емтихан тапсыру")
-        verbose_name_plural = _("Емтихан тапсырулар")
+        verbose_name = _("Емтихан нәтижесі")
+        verbose_name_plural = _("Емтихан нәтижелері")
 
     def __str__(self):
-        return f"Attempt#{self.pk} {self.user} - {self.exam}"
+        return _('#{}-емтихан нәтижесі').format(self.pk)
 
     def mark_submitted(self):
         self.status = AttemptStatus.SUBMITTED
@@ -63,11 +63,11 @@ class SectionAttempt(models.Model):
     time_spent_seconds = models.PositiveIntegerField(_("Жұмсаған уақыт (сек)"), default=0)
 
     class Meta:
-        verbose_name = _("Секция тапсыруы")
-        verbose_name_plural = _("Секция тапсырулары")
+        verbose_name = _("Секция нәтижесі")
+        verbose_name_plural = _("Секция нәтижелері")
 
     def __str__(self):
-        return f"{self.attempt} / {self.section}"
+        return _('#{}-секция нәтижесі').format(self.pk)
 
 
 # QuestionAttempt
@@ -89,11 +89,11 @@ class QuestionAttempt(models.Model):
     updated_at = models.DateTimeField(_("Жаңартылған уақыты"), auto_now=True)
 
     class Meta:
-        verbose_name = _("Сұрақ жауабы")
-        verbose_name_plural = _("Сұрақ жауаптары")
+        verbose_name = _("Сұрақ нәтижесі")
+        verbose_name_plural = _("Сұрақ нәтижелері")
 
     def __str__(self):
-        return f"QA#{self.pk} {self.question_id}"
+        return _('#{}-сұрақ нәтижесі').format(self.pk)
 
 
 # ======================================================================================================================
@@ -102,23 +102,20 @@ class QuestionAttempt(models.Model):
 # SpeakingAnswer
 class SpeakingAnswer(models.Model):
     question_attempt = models.OneToOneField(
-        "QuestionAttempt",
-        on_delete=models.CASCADE,
-        related_name="speaking_answer",
-        verbose_name=_("QuestionAttempt"),
+        "QuestionAttempt", on_delete=models.CASCADE,
+        related_name="speaking_answer", verbose_name=_("Сұрақ нәтижесі"),
     )
-
     audio = models.FileField(_("Аудио жауап"), upload_to="exams/speaking/", blank=True, null=True)
     transcript = models.TextField(_("Транскрипт"), blank=True, null=True)
     matched_count = models.PositiveSmallIntegerField(_("Табылған сөз саны"), default=0)
     matched_keywords = models.JSONField(_("Табылған кілт сөздер"), default=list, blank=True)
 
-    def __str__(self):
-        return f"SpeakingAnswer#{self.pk}"
-
     class Meta:
-        verbose_name = _("Speaking жауабы")
-        verbose_name_plural = _("Speaking жауаптары")
+        verbose_name = _("Айтылым жауабы")
+        verbose_name_plural = _("Айтылым жауаптары")
+
+    def __str__(self):
+        return _('#{}-айтылым жауабы').format(self.pk)
 
 
 # PracticalSubmission
@@ -131,7 +128,7 @@ class PracticalSubmission(models.Model):
 
     question_attempt = models.OneToOneField(
         QuestionAttempt, on_delete=models.CASCADE,
-        related_name="practical_submission", verbose_name=_("QuestionAttempt"),
+        related_name="practical_submission", verbose_name=_("Сұрақ нәтижесі"),
     )
 
     language = models.CharField(_("Тіл"), max_length=16, choices=Language.choices, default=Language.PYTHON)
@@ -146,24 +143,27 @@ class PracticalSubmission(models.Model):
     checked_at = models.DateTimeField(_("Тексерілген уақыты"), blank=True, null=True)
 
     class Meta:
-        verbose_name = _("Practical жіберілім")
-        verbose_name_plural = _("Practical жіберілімдер")
+        verbose_name = _("Жазбаша жауабы")
+        verbose_name_plural = _("Жазбаша жауаптары")
 
     def __str__(self):
-        return f"PracticalSubmission#{self.pk}"
+        return _('#{}-жазбаша жауабы').format(self.pk)
 
 
 # MCQSelection
 class MCQSelection(models.Model):
     question_attempt = models.ForeignKey(
         QuestionAttempt, on_delete=models.CASCADE,
-        related_name="mcq_selections", verbose_name=_("QuestionAttempt"),
+        related_name="mcq_selections", verbose_name=_("Сұрақ нәтижесі"),
     )
     option = models.ForeignKey(
         "Option", on_delete=models.CASCADE,
-        related_name="selections", verbose_name=_("Option"),
+        related_name="selections", verbose_name=_("Нұсқа"),
     )
 
     class Meta:
-        verbose_name = _("MCQ таңдау")
-        verbose_name_plural = _("MCQ таңдаулар")
+        verbose_name = _("Тест жауабы")
+        verbose_name_plural = _("Тест жауаптары")
+
+    def __str__(self):
+        return _('#{}-тест жауабы').format(self.pk)

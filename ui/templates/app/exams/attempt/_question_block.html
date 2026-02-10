@@ -1,0 +1,42 @@
+{% load dict_extras %}
+
+<div class="border rounded-2xl p-4 bg-white">
+    <div class="flex items-start justify-between gap-3">
+        <div>
+            <div class="text-sm font-semibold">
+                {{ q.order }}. {{ q.prompt }}
+            </div>
+            <div class="text-xs text-gray-500 mt-1">
+                Түрі: {{ q.get_question_type_display }} • Ұпай: {{ q.points }}
+            </div>
+        </div>
+
+        {% with qa=qa_by_qid.q.id %}
+        {% endwith %}
+    </div>
+
+    {% with qa=qa_by_qid|get_item:q.id %}
+        {% if qa %}
+            {% if mode == "review" %}
+                <div class="mt-3 text-sm">
+                    <span class="text-gray-500">Сіздің ұпайыңыз:</span>
+                    <span class="font-semibold">{{ qa.score }}</span>
+                    <span class="text-gray-500">/</span>
+                    <span class="font-semibold">{{ qa.max_score }}</span>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="mt-4">
+        {% if q.question_type == "mcq_single" %}
+            {% include "./partials/mcq_single.html" %}
+        {% elif q.question_type == "mcq_multi" %}
+            {% include "./partials/mcq_multi.html" %}
+        {% else %}
+            <div class="text-sm text-gray-500">
+                Бұл сұрақ түрі кейін қосылады.
+            </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,7 +1,7 @@
 <p align="center">
     <img 
-        src="ui/static/images/logo.png" 
-        alt="Biomedia Logo" width="64" 
+        src="ui/static/images/logo.svg" 
+        alt="TestApp Logo" width="64" 
     />
 </p>
 <h3 align="center">TestApp</h3>
