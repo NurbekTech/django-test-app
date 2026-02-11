@@ -4,7 +4,7 @@
 {% block title %}{{ attempt.exam.title }} - #{{ attempt.id }}-емтихан нәтижесі{% endblock title %}
 
 {% block base_layout %}
-<div class="max-w-6xl mx-auto px-4 py-6">
+<div class="container mx-auto px-4 py-6">
     <div class="flex items-center justify-between mb-4">
         <div>
             <div class="text-xl font-semibold">{{ attempt.exam.title }}</div>
@@ -19,29 +19,29 @@
 
         <div class="lg:col-span-9 space-y-4">
             {% if current_section %}
-            <div class="bg-white border rounded-2xl p-5">
-                <div class="text-lg font-semibold">{{ current_section.get_section_type_display }}</div>
+                <div class="bg-white border rounded-2xl p-5">
+                    <div class="text-lg font-semibold">{{ current_section.get_section_type_display }}</div>
 
-                {% if current_section.material %}
-                    {% if current_section.material.time_limit_seconds %}
-                        <div class="text-sm text-gray-500 mt-1">
-                            Уақыт: {{ current_section.material.time_limit_seconds }} сек
-                        </div>
-                    {% endif %}
+                    {% if current_section.material %}
+                        {% if current_section.material.time_limit_seconds %}
+                            <div class="text-sm text-gray-500 mt-1">
+                                Уақыт: {{ current_section.material.time_limit_seconds }} сек
+                            </div>
+                        {% endif %}
 
-                    {% if current_section.material.text %}
-                        <div class="mt-3 text-gray-700 whitespace-pre-line">{{ current_section.material.text|safe }}</div>
-                    {% endif %}
+                        {% if current_section.material.text %}
+                            <div class="mt-3 text-gray-700 whitespace-pre-line">{{ current_section.material.text|safe }}</div>
+                        {% endif %}
 
-                    {% if current_section.material.audio %}
-                        <div class="mt-4">
-                            <audio controls class="w-full">
-                                <source src="{{ current_section.material.audio.url }}">
-                            </audio>
-                        </div>
+                        {% if current_section.material.audio %}
+                            <div class="mt-4">
+                                <audio controls class="w-full">
+                                    <source src="{{ current_section.material.audio.url }}">
+                                </audio>
+                            </div>
+                        {% endif %}
                     {% endif %}
-                {% endif %}
-            </div>
+                </div>
 
             <div class="space-y-4">
                 {% for q in current_section.questions.all %}

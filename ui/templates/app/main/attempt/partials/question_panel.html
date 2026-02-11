@@ -1,0 +1,105 @@
+<div id="question-header" hx-swap-oob="true">
+    <div class="flex flex-wrap gap-2 p-3 rounded-2xl border bg-white mb-4">
+        {% for qq in flat_questions %}
+            {% if qq.id == q.id %}
+                <div
+                    class="w-10 h-10 flex items-center justify-center rounded-xl border-2 border-primary-600 bg-indigo-50 font-bold">
+                    {{ forloop.counter }}
+                </div>
+            {% elif qq.id in answered_q_ids %}
+                <div class="w-10 h-10 flex items-center justify-center rounded-xl border border-green-300 bg-green-50 text-green-700 font-semibold">
+                    {{ forloop.counter }}
+                </div>
+            {% else %}
+                <div class="w-10 h-10 flex items-center justify-center rounded-xl border bg-gray-50 text-gray-700">
+                    {{ forloop.counter }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+{% if current_section %}
+    <div 
+        id="section-material" 
+        hx-swap-oob="true" 
+        class="bg-white border rounded-2xl p-5 mb-4"
+    >
+        <div class="text-lg font-semibold">{{ current_section.get_section_type_display }}</div>
+        {% if current_section.material %}
+            {% if current_section.material.time_limit_seconds %}
+                <div class="text-sm text-gray-500 mt-1">
+                    Уақыт: {{ current_section.material.time_limit_seconds }} сек
+                </div>
+            {% endif %}
+
+            {% if current_section.material.text %}
+                <div class="mt-3 text-gray-700 whitespace-pre-line">{{ current_section.material.text|safe }}</div>
+            {% endif %}
+
+            {% if current_section.material.audio %}
+                <div class="mt-4">
+                    <audio controls class="w-full">
+                        <source src="{{ current_section.material.audio.url }}">
+                    </audio>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endif %}
+
+
+<div class="bg-white border rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-3">
+        <div class="text-sm text-gray-500">Сұрақ {{ q_index }} / {{ q_total }}</div>
+
+        {% if saved %}
+            <span class="text-xs px-2 py-1 rounded-full bg-green-50 border border-green-200 text-green-700">
+                Сақталды ✅
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="text-base font-semibold mb-4">
+        {{ q.prompt|safe }}
+    </div>
+
+    <form id="qform" hx-post="{% url 'customer:attempt_answer' attempt.id q.id %}" hx-target="#question-panel"
+        hx-swap="innerHTML">
+        {% csrf_token %}
+
+        <input type="hidden" name="next_qid" value="{{ next_qid|default:'' }}" />
+
+        {% include "app/main/attempt/partials/question_block.html" with q=q selected_set=selected_set %}
+
+        <div class="mt-6 flex items-center justify-between">
+            {% if prev_qid %}
+                <button
+                    type="button"
+                    hx-get="{% url 'customer:attempt_question' attempt.id %}?section={{ current_section.id }}&q={{ prev_qid }}"
+                    hx-target="#question-panel"
+                    hx-swap="innerHTML"
+                    class="px-4 py-2 rounded-xl border"
+                >
+                    Артқа
+                </button>
+            {% else %}
+                <button type="button" disabled
+                    class="px-4 py-2 rounded-xl border bg-gray-100 text-gray-400 cursor-not-allowed">
+                    Артқа
+                </button>
+            {% endif %}
+
+            {% if next_qid %}
+                <button type="submit" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium">
+                    Келесі
+                </button>
+            {% else %}
+                <button type="submit" formaction="{% url 'customer:attempt_submit' attempt.id %}" formmethod="post"
+                    class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium">
+                    Тапсыру
+                </button>
+            {% endif %}
+        </div>
+    </form>
+</div>

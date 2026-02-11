@@ -1,0 +1,39 @@
+<div class="space-y-4">
+  <div class="text-lg font-semibold">{{ q.text|safe }}</div>
+
+  {% if q.question_type == "mcq_single" %}
+    <div class="space-y-2">
+      {% for opt in q.options.all %}
+        <label class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+          <input
+            type="radio"
+            name="option_id"
+            value="{{ opt.id }}"
+            {% if opt.id in selected_ids %}checked{% endif %}
+          >
+          <span>{{ opt.text|safe }}</span>
+        </label>
+      {% endfor %}
+    </div>
+
+  {% elif q.question_type == "mcq_multi" %}
+    <div class="space-y-2">
+      {% for opt in q.options.all %}
+        <label class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+          <input
+            type="checkbox"
+            name="option_ids"
+            value="{{ opt.id }}"
+            {% if opt.id in selected_ids %}checked{% endif %}
+          >
+          <span>{{ opt.text|safe }}</span>
+        </label>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="p-3 rounded-lg border bg-yellow-50 text-yellow-800">
+      Бұл сұрақ типі үшін take UI әлі қосылмаған.
+    </div>
+  {% endif %}
+</div>
