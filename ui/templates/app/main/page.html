@@ -1,5 +1,5 @@
 {% extends "layouts/base_layout.html" %}
-
+{% load static %}
 
 {% block title %}Басты бет{% endblock title %}
 
@@ -13,7 +13,7 @@
                     {% if profile_user.avatar %}
                         <img src="{{ profile_user.avatar.url }}" class="w-full h-full object-cover" alt="avatar">
                     {% else %}
-                        <span class="text-muted text-sm">No avatar</span>
+                        <img src="{% static 'images/avatar.png' %}" class="w-full h-full object-cover" alt="avatar">
                     {% endif %}
                 </div>
 
@@ -21,19 +21,19 @@
                     <h2 class="text-2xl font-semibold">
                         {{ profile_user.get_full_name|default:profile_user.username }}
                     </h2>
-                    <div class="text-sm text-muted">
+                    <div class="text-muted">
                         {{ profile_user.email }}
                     </div>
                 </div>
             </div>
 
             <div class="bg-secondary-50 rounded-2xl p-6">
-                <div class="text-sm text-muted">Жалпы орташа баға</div>
+                <div class="text-muted">Жалпы орташа баға</div>
                 <h1 class="text-4xl font-semibold">
                     {% if overall_avg is not None %}
-                    {{ overall_avg|floatformat:2 }}
+                        {{ overall_avg|floatformat:2 }}
                     {% else %}
-                    —
+                        --
                     {% endif %}
                 </h1>
             </div>
@@ -43,8 +43,8 @@
             {% for s in section_progress %}
                 <div class="flex flex-col gap-4 border border-border-200 rounded-xl p-4">
                     <div class="flex items-center justify-between">
-                        <div class="text-sm font-medium">{{ s.label }}</div>
-                        <div class="text-sm text-muted">
+                        <div class="font-medium">{{ s.label }}</div>
+                        <div class="text-muted">
                             {% if s.avg is not None %}{{ s.avg|floatformat:2 }}{% else %}—{% endif %}
                         </div>
                     </div>
@@ -103,7 +103,7 @@
     <div class="bg-white rounded-2xl border border-border-200 p-8">
         <div class="flex items-center justify-between">
             <h3 class="text-xl font-semibold">Соңғы тапсырылған тесттер</h3>
-            <a href="#" class="text-sm text-muted hover:text-foreground">Барлығы</a>
+            <a href="#" class="text-muted hover:text-foreground">Барлығы</a>
         </div>
 
         <div class="mt-4 overflow-x-auto">

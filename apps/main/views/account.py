@@ -17,12 +17,12 @@ def account_view(request):
         if form.is_valid():
             form.save()
             messages.success(request, _('Профиль сәтті жаңартылды'))
-            return redirect('main:account')
+            return redirect('customer:account')
     else:
         form = UserUpdateForm(instance=user)
 
     context = {'form': form}
-    return render(request, 'app/account/me/page.html', context)
+    return render(request, 'app/main/account/me/page.html', context)
 
 
 # settings page
@@ -39,16 +39,16 @@ def settings_view(request):
                 password_form.save()
                 update_session_auth_hash(request, user)
                 messages.success(request, _('Құпиясөз сәтті өзгертілді'))
-                return redirect('main:settings')
+                return redirect('customer:settings')
             else:
                 messages.error(request, _('Қате! Құпиясөз өзгертілмеді'))
 
         elif 'delete_account' in request.POST:
             user.delete()
             messages.success(request, _('Аккаунт жойылды'))
-            return redirect('main:login')
+            return redirect('customer:login')
 
     context = {
         'password_form': password_form
     }
-    return render(request, 'app/account/settings/page.html', context)
+    return render(request, 'app/main/account/settings/page.html', context)
