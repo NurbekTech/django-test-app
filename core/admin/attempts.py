@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from core.admin import LinkedAdminMixin
-from core.models import MCQSelection, SpeakingAnswer, PracticalSubmission, QuestionAttempt, SectionAttempt, ExamAttempt
+from core.models import MCQSelection, SpeakingAnswer, QuestionAttempt, SectionAttempt, ExamAttempt, WritingSubmission
 
 
 # ======================================================================================================================
@@ -19,9 +19,9 @@ class SpeakingAnswerInline(admin.StackedInline):
     extra = 0
 
 
-# PracticalSubmissionInline
-class PracticalSubmissionInline(admin.StackedInline):
-    model = PracticalSubmission
+# WritingSubmissionInline
+class WritingSubmissionInline(admin.StackedInline):
+    model = WritingSubmission
     extra = 0
 
 
@@ -37,7 +37,7 @@ class QuestionAttemptAdmin(LinkedAdminMixin, admin.ModelAdmin):
         return self.parent_link(obj, 'section_attempt')
     attempt_section_link.short_description = _("Секция нәтижесі")
 
-    inlines = (MCQSelectionInline, SpeakingAnswerInline, PracticalSubmissionInline, )
+    inlines = (MCQSelectionInline, SpeakingAnswerInline, WritingSubmissionInline, )
 
 
 # ======================================================================================================================

@@ -97,7 +97,7 @@ class QuestionAttempt(models.Model):
 
 
 # ======================================================================================================================
-# Specialized answers (optional but recommended)
+# QuestionAttempt answers
 # ======================================================================================================================
 # SpeakingAnswer
 class SpeakingAnswer(models.Model):
@@ -118,38 +118,6 @@ class SpeakingAnswer(models.Model):
         return _('#{}-айтылым жауабы').format(self.pk)
 
 
-# PracticalSubmission
-class PracticalSubmission(models.Model):
-    class Language(models.TextChoices):
-        PYTHON = "python", _("Python")
-        CPP = "cpp", _("C++")
-        JAVA = "java", _("Java")
-        JS = "js", _("JavaScript")
-
-    question_attempt = models.OneToOneField(
-        QuestionAttempt, on_delete=models.CASCADE,
-        related_name="practical_submission", verbose_name=_("Сұрақ нәтижесі"),
-    )
-
-    language = models.CharField(_("Тіл"), max_length=16, choices=Language.choices, default=Language.PYTHON)
-    code = models.TextField(_("Код"), blank=True, null=True)
-    passed = models.PositiveIntegerField(_("Өткен тест саны"), default=0)
-    failed = models.PositiveIntegerField(_("Құлаған тест саны"), default=0)
-    total = models.PositiveIntegerField(_("Барлық тест саны"), default=0)
-    runtime_ms = models.PositiveIntegerField(_("Runtime (ms)"), default=0)
-    memory_kb = models.PositiveIntegerField(_("Memory (kb)"), default=0)
-    verdict = models.CharField(_("Verdict"), max_length=64, blank=True, null=True)  # AC / WA / TLE / RE ...
-    details = models.JSONField(_("Толық нәтиже (JSON)"), default=dict, blank=True)
-    checked_at = models.DateTimeField(_("Тексерілген уақыты"), blank=True, null=True)
-
-    class Meta:
-        verbose_name = _("Жазбаша жауабы")
-        verbose_name_plural = _("Жазбаша жауаптары")
-
-    def __str__(self):
-        return _('#{}-жазбаша жауабы').format(self.pk)
-
-
 # MCQSelection
 class MCQSelection(models.Model):
     question_attempt = models.ForeignKey(
@@ -167,3 +135,29 @@ class MCQSelection(models.Model):
 
     def __str__(self):
         return _('#{}-тест жауабы').format(self.pk)
+
+
+# WritingSubmission
+class WritingSubmission(models.Model):
+    class Language(models.TextChoices):
+        PYTHON = "python", _("Python")
+        CPP = "cpp", _("C++")
+        JAVA = "java", _("Java")
+        JS = "js", _("JavaScript")
+
+    question_attempt = models.OneToOneField(
+        QuestionAttempt, on_delete=models.CASCADE,
+        related_name="writing_submission", verbose_name=_("Сұрақ нәтижесі"),
+    )
+    language = models.CharField(_("Тіл"), max_length=16, choices=Language.choices, default=Language.PYTHON)
+    code = models.TextField(_("Код"), blank=True, null=True)
+    output_text = models.TextField(_("Жауап (output)"), blank=True, null=True)
+    is_correct = models.BooleanField(_("Дұрыс"), default=False)
+    checked_at = models.DateTimeField(_("Тексерілген уақыты"), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _("Жазбаша жауабы")
+        verbose_name_plural = _("Жазбаша жауаптары")
+
+    def __str__(self):
+        return _('#{}-жазбаша жауабы').format(self.pk)

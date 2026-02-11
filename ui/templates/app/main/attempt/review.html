@@ -27,17 +27,22 @@
                 <div class="text-sm font-semibold">Секциялар</div>
 
                 {% for s in sections %}
-                <a href="/attempts/{{ attempt.id }}/review/?section={{ s.id }}" class="block px-3 py-2 rounded-xl text-sm border
-                    {% if current_section and current_section.id == s.id %}
-                      bg-gray-900 text-white border-gray-900
-                    {% else %}
-                      bg-white hover:bg-gray-50
-                    {% endif %}">
-                    <div class="flex items-center justify-between">
-                        <span>{{ s.get_section_type_display }}</span>
-                        <span class="text-xs opacity-80">{{ s.questions.count }}</span>
-                    </div>
-                </a>
+                    <a 
+                        href="/attempts/{{ attempt.id }}/review/?section={{ s.id }}" 
+                        class="
+                            block px-3 py-2 rounded-xl text-sm border
+                            {% if current_section and current_section.id == s.id %}
+                                bg-gray-900 text-white border-gray-900
+                            {% else %}
+                                bg-white hover:bg-gray-50
+                            {% endif %}
+                        "
+                    >
+                        <div class="flex items-center justify-between">
+                            <span>{{ s.get_section_type_display }}</span>
+                            <span class="text-xs opacity-80">{{ s.questions.count }}</span>
+                        </div>
+                    </a>
                 {% endfor %}
 
                 <a href="{% url 'customer:dashboard' %}"

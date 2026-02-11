@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -5,7 +6,10 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 from apps.main.services.attempt import ensure_attempt_initialized, save_mcq_answer_only, \
     load_attempt_for_user, is_hx, finish_attempt_auto
-from core.models import AttemptStatus, Question, QuestionAttempt, MCQSelection
+from apps.main.services.speaking import transcribe_audio, match_keywords, score_speaking
+from apps.main.services.writing import grade_writing_submission
+from core.models import AttemptStatus, Question, QuestionAttempt, MCQSelection, ExamAttempt, SpeakingRubric, \
+    SpeakingAnswer, WritingSubmission
 from core.utils.decorators import role_required
 
 
@@ -110,6 +114,132 @@ def attempt_answer_view(request, attempt_id: int, question_id: int):
         return HttpResponse(html)
 
     return redirect(f"/attempts/{attempt.pk}/?section={q.section_id}")
+
+
+# attempt speaking upload action
+# ======================================================================================================================
+@transaction.atomic
+def attempt_speaking_upload_view(request, attempt_id: int, question_id: int):
+    attempt = get_object_or_404(ExamAttempt, pk=attempt_id, user=request.user)
+
+    if attempt.status != AttemptStatus.IN_PROGRESS:
+        return redirect("customer:attempt_review", attempt_id=attempt.pk)
+
+    qa = get_object_or_404(
+        QuestionAttempt,
+        section_attempt__attempt=attempt,
+        question_id=question_id,
+    )
+    q = qa.question
+    if q.question_type != "speaking_keywords":
+        return redirect("customer:attempt_detail", attempt_id=attempt.pk)
+
+    audio_file = request.FILES.get("audio")
+    if not audio_file:
+        # UI-да message шығарып, қайта көрсетуге болады
+        return redirect("customer:attempt_detail", attempt_id=attempt.pk)
+
+    # rubric міндетті
+    rubric = get_object_or_404(SpeakingRubric, question=q)
+
+    sa, _ = SpeakingAnswer.objects.get_or_create(question_attempt=qa)
+    sa.audio = audio_file
+    sa.save(update_fields=["audio"])
+
+    # 1) транскрипция
+    transcript = transcribe_audio(sa.audio.path)
+
+    # 2) match + score
+    matched = match_keywords(transcript, rubric.keywords)
+    points = score_speaking(matched, rubric.point_per_keyword, rubric.max_points)
+
+    # 3) SpeakingAnswer жаңарту
+    sa.transcript = transcript
+    sa.matched_keywords = matched
+    sa.matched_count = len(matched)
+    sa.save(update_fields=["transcript", "matched_keywords", "matched_count"])
+
+    # 4) QuestionAttempt жаңарту
+    qa.max_score = rubric.max_points
+    qa.score = points
+    qa.is_answered = True
+    qa.is_graded = True
+    qa.answer_json = {
+        "type": "speaking_keywords",
+        "transcript": transcript,
+        "matched_keywords": matched,
+    }
+    qa.save(update_fields=["max_score", "score", "is_answered", "is_graded", "answer_json"])
+    context = {
+        "attempt": attempt,
+        "q": q,
+        "saved": True,
+        "selected_set": set(),  # speaking-та қажет емес, бірақ шаблон күтсе
+        "qa": qa,  # егер сен attempt_detail_view контекстінде qa беріп жүрсең
+    }
+
+    if is_hx(request):
+        html = render_to_string(
+            "app/main/attempt/partials/question_card.html",
+            context,
+            request=request
+        )
+        return HttpResponse(html)
+
+    return redirect("customer:attempt_detail", attempt_id=attempt.pk)
+
+
+# attempt writing submit action
+@transaction.atomic
+def attempt_writing_submit_view(request, attempt_id: int, question_id: int):
+    attempt = load_attempt_for_user(request, attempt_id)
+
+    if request.method != "POST":
+        return redirect("customer:attempt_detail", attempt_id=attempt.pk)
+
+    if attempt.status != AttemptStatus.IN_PROGRESS:
+        return redirect("customer:attempt_review", attempt_id=attempt.pk)
+
+    qa = get_object_or_404(
+        QuestionAttempt,
+        section_attempt__attempt=attempt,
+        question_id=question_id,
+    )
+
+    output_text = (request.POST.get("output_text") or "").strip()
+    code_text = request.POST.get("code") or ""
+
+    sub, _ = WritingSubmission.objects.get_or_create(
+        question_attempt=qa,
+    )
+    sub.code = code_text
+    sub.output_text = output_text
+    sub.save(update_fields=["code", "output_text"])
+
+    # grade
+    is_correct = grade_writing_submission(sub)
+
+    # QuestionAttempt жаңарту
+    qa.is_answered = True
+    qa.is_graded = True
+    qa.score = qa.max_score if is_correct else 0
+    qa.save(update_fields=["is_answered", "is_graded", "score"])
+
+    # HTMX болса тек карточканы қайтарамыз
+    if is_hx(request):
+        html = render_to_string(
+            "app/main/attempt/partials/question_card.html",
+            {
+                "attempt": attempt,
+                "q": qa.question,
+                "qa": qa,
+                "saved": True,
+            },
+            request=request
+        )
+        return HttpResponse(html)
+
+    return redirect("customer:attempt_detail", attempt_id=attempt.pk)
 
 
 # attempt_submit_view

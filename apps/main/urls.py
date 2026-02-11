@@ -21,7 +21,17 @@ urlpatterns = [
 
     # attempt urls...
     path("attempts/<int:attempt_id>/", attempt.attempt_detail_view, name="attempt_detail"),
-    path("attempts/<int:attempt_id>/review/", attempt.attempt_review_view, name="attempt_review"),
-    path("attempts/<int:attempt_id>/submit/", attempt.attempt_submit_view, name="attempt_submit"),
     path("attempts/<int:attempt_id>/answer/<int:question_id>/", attempt.attempt_answer_view, name="attempt_answer"),
+    path(
+        "attempts/<int:attempt_id>/speaking/<int:question_id>/upload/",
+        attempt.attempt_speaking_upload_view,
+        name="attempt_speaking_upload",
+    ),
+    path(
+        "attempts/<int:attempt_id>/writing/<int:question_id>/submit/",
+        attempt.attempt_writing_submit_view,
+        name="attempt_writing_submit",
+    ),
+    path("attempts/<int:attempt_id>/submit/", attempt.attempt_submit_view, name="attempt_submit"),
+    path("attempts/<int:attempt_id>/review/", attempt.attempt_review_view, name="attempt_review"),
 ]

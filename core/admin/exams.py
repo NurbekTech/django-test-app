@@ -4,7 +4,7 @@ from django.utils.safestring import mark_safe
 from core.admin._mixins import LinkedAdminMixin
 from core.forms.exams import ExamAdminForm, SectionMaterialAdminForm, QuestionAdminForm, OptionAdminForm, \
     SpeakingRubricAdminForm
-from core.models import Exam, Section, SectionMaterial, Question, Option, WritingTestCase, SpeakingRubric
+from core.models import Exam, Section, SectionMaterial, Question, Option, SpeakingRubric, Writing
 from django.utils.translation import gettext_lazy as _
 
 
@@ -15,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 class SectionInline(LinkedAdminMixin, admin.TabularInline):
     model = Section
     extra = 0
+    fields = ("order", "section_type", "max_score", "time_limit", "detail_link", )
     readonly_fields = ("detail_link", )
 
     def detail_link(self, obj):
@@ -99,9 +100,9 @@ class SpeakingRubricInline(admin.StackedInline):
     form = SpeakingRubricAdminForm
 
 
-# WritingTestCaseInline
-class WritingTestCaseInline(admin.StackedInline):
-    model = WritingTestCase
+# WritingInline
+class WritingInline(admin.StackedInline):
+    model = Writing
     extra = 0
 
 
@@ -122,7 +123,7 @@ class QuestionAdmin(LinkedAdminMixin, admin.ModelAdmin):
         return self.parent_link(obj, "section")
     section_link.short_description = _("Емтихан")
 
-    inlines = [OptionInline, WritingTestCaseInline, SpeakingRubricInline]
+    inlines = (OptionInline, WritingInline, SpeakingRubricInline, )
 
     def get_inline_instances(self, request, obj=None):
         inline_instances = super().get_inline_instances(request, obj)
@@ -137,7 +138,7 @@ class QuestionAdmin(LinkedAdminMixin, admin.ModelAdmin):
             allowed.add(OptionInline)
         if qt == Question.QuestionType.SPEAKING_KEYWORDS:
             allowed.add(SpeakingRubricInline)
-        if qt == Question.QuestionType.PRACTICAL_CODE:
-            allowed.add(WritingTestCaseInline)
+        if qt == Question.QuestionType.WRITING:
+            allowed.add(WritingInline)
 
         return [inl for inl in inline_instances if inl.__class__ in allowed]

@@ -28,7 +28,7 @@ class Section(models.Model):
         LISTENING = "listening", _("Тыңдалым (Listening)")
         READING = "reading", _("Оқылым (Reading)")
         SPEAKING = "speaking", _("Айтылым (Speaking)")
-        PRACTICAL = "practical", _("Жазылым (Writing/Practical)")
+        WRITING = "writing", _("Жазылым (Writing/Practical)")
 
     exam = models.ForeignKey(
         Exam, related_name="sections",
@@ -77,7 +77,7 @@ class Question(models.Model):
         MCQ_SINGLE = "mcq_single", _("Бір жауапты")
         MCQ_MULTI = "mcq_multi", _("Көп жауапты")
         SPEAKING_KEYWORDS = "speaking_keywords", _("Айтылым")
-        PRACTICAL_CODE = "practical_code", _("Жазбаша")
+        WRITING = "writing", _("Жазбаша")
 
     section = models.ForeignKey(
         Section, on_delete=models.CASCADE,
@@ -97,7 +97,7 @@ class Question(models.Model):
             self.section.SectionType.LISTENING: {self.QuestionType.MCQ_SINGLE, self.QuestionType.MCQ_MULTI},
             self.section.SectionType.READING:   {self.QuestionType.MCQ_SINGLE, self.QuestionType.MCQ_MULTI},
             self.section.SectionType.SPEAKING:  {self.QuestionType.SPEAKING_KEYWORDS},
-            self.section.SectionType.PRACTICAL: {self.QuestionType.PRACTICAL_CODE},
+            self.section.SectionType.WRITING: {self.QuestionType.WRITING},
         }
 
         st = self.section.section_type if self.section.pk else None
@@ -184,19 +184,17 @@ class SpeakingRubric(models.Model):
 
 # Writing
 # ======================================================================================================================
-class WritingTestCase(models.Model):
-    question = models.ForeignKey(
+class Writing(models.Model):
+    question = models.OneToOneField(
         Question, on_delete=models.CASCADE,
-        related_name="test_cases", verbose_name=_("Сұрақ")
+        related_name="writing", verbose_name=_("Сұрақ")
     )
-    input_data = models.TextField(_("Енгізу"))
-    expected_output = models.TextField(_("Шығу"))
-    is_public = models.BooleanField(_("Is public"), default=False)
-    weight = models.PositiveIntegerField(default=1)
-
-    def __str__(self):
-        return _('#{}-жазбаша есеп').format(self.pk)
+    expected_output = models.TextField(_("Дұрыс шығару (output)"))
+    ignore_whitespace = models.BooleanField(_("Whitespace елемеу"), default=True)
 
     class Meta:
         verbose_name = _("Жазбаша есеп")
         verbose_name_plural = _("Жазбаша есептер")
+
+    def __str__(self):
+        return _('#{}-жазбаша есеп').format(self.pk)
