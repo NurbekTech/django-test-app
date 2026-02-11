@@ -1,13 +1,13 @@
 from django.db import transaction
 from django.db.models import Prefetch
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from core.utils.decorators import role_required
 from django.views.decorators.http import require_GET, require_POST
 from apps.main.services.attempt import ensure_attempt_initialized, save_mcq_answer_only, load_attempt_for_user, \
-    is_hx, finish_attempt_auto
+    is_hx, finish_attempt_auto, build_attempt_question_context, grade_pending_open_questions
 from apps.main.services.speaking import transcribe_audio, match_keywords, score_speaking
 from apps.main.services.writing import grade_writing_submission
 from core.models import AttemptStatus, Question, QuestionAttempt, MCQSelection, SpeakingRubric, SpeakingAnswer, \
@@ -79,7 +79,6 @@ def attempt_question_view(request, attempt_id: int):
             )
         )
     )
-
     flat_questions = [q for sec in sections for q in sec.questions.all()]
     if not flat_questions:
         return redirect("customer:attempt_review", attempt_id=attempt.pk)
@@ -92,13 +91,12 @@ def attempt_question_view(request, attempt_id: int):
         .filter(section_attempt__attempt=attempt)
         .select_related("question", "section_attempt")
     )
-    qa_by_qid = {qa.question_id: qa for qa in qa_qs}
-
-    current_qa = qa_by_qid.get(current_qid)
+    qa_by_q_id = {qa.question_id: qa for qa in qa_qs}
+    current_qa = qa_by_q_id.get(current_qid)
     if not current_qa:
         ensure_attempt_initialized(attempt)
         current_qa = QuestionAttempt.objects.get(section_attempt__attempt=attempt, question_id=current_qid)
-        qa_by_qid[current_qid] = current_qa
+        qa_by_q_id[current_qid] = current_qa
 
     current_q = current_qa.question
     current_section = None
@@ -112,12 +110,12 @@ def attempt_question_view(request, attempt_id: int):
         .filter(question_attempt=current_qa)
         .values_list("option_id", flat=True)
     )
-    answered_q_ids = {qa.question_id for qa in qa_by_qid.values() if qa.is_answered}
+    answered_q_ids = {qa.question_id for qa in qa_by_q_id.values() if qa.is_answered}
 
     idx = q_ids.index(current_qid)
-    prev_qid = q_ids[idx - 1] if idx > 0 else None
-    next_qid = q_ids[idx + 1] if idx < len(q_ids) - 1 else None
-    is_last = next_qid is None
+    prev_q_id = q_ids[idx - 1] if idx > 0 else None
+    next_q_id = q_ids[idx + 1] if idx < len(q_ids) - 1 else None
+    is_last = next_q_id is None
 
     context = {
         "attempt": attempt,
@@ -127,30 +125,32 @@ def attempt_question_view(request, attempt_id: int):
         "q": current_q,
         "qa": current_qa,
         "selected_set": selected_set,
-        "prev_qid": prev_qid,
-        "next_qid": next_qid,
+        "prev_q_id": prev_q_id,
+        "next_q_id": next_q_id,
         "q_index": idx + 1,
         "q_total": len(q_ids),
         "is_last": is_last,
     }
+    if is_hx(request):
+        return render(request, "app/main/attempt/partials/_question_wrapper.html", context)
+
     return render(request, "app/main/attempt/question.html", context)
 
 
-# ANSWER SAVE (HTMX ONLY)
+# ANSWER SAVE
 # ======================================================================================================================
+@require_POST
 @role_required("customer")
 def attempt_answer_view(request, attempt_id: int, question_id: int):
     attempt = load_attempt_for_user(request, attempt_id)
+
     if attempt.status != AttemptStatus.IN_PROGRESS:
         return redirect("customer:attempt_review", attempt_id=attempt.pk)
 
-    # ТЕК HTMX
     if not is_hx(request):
         return redirect("customer:attempt_detail", attempt_id=attempt.pk)
 
     q = get_object_or_404(Question.objects.only("id", "question_type", "section_id"), pk=question_id)
-
-    # 1) SAVE current answer
     if q.question_type == "mcq_single":
         oid = request.POST.get("option")
         option_ids = [int(oid)] if (oid and oid.isdigit()) else []
@@ -161,85 +161,29 @@ def attempt_answer_view(request, attempt_id: int, question_id: int):
         option_ids = [int(x) for x in raw if x.isdigit()]
         save_mcq_answer_only(attempt, question_id=q.pk, option_ids=option_ids)
 
-    # 2) Decide which question to render next
-    next_qid = request.POST.get("next_qid")
-    next_qid = int(next_qid) if (next_qid and next_qid.isdigit()) else q.pk
+    next_q_id = request.POST.get("next_qid")
+    next_q_id = int(next_q_id) if (next_q_id and next_q_id.isdigit()) else q.pk
 
-    # 3) Rebuild data for top boxes + next question panel
-    exam = attempt.exam
-    sections = (
-        exam.sections
-        .all()
-        .order_by("order")
-        .select_related("material")
-        .prefetch_related(
-            Prefetch(
-                "questions",
-                queryset=Question.objects.order_by("order").prefetch_related("options"),
-            )
-        )
-    )
-    flat_questions = [qq for sec in sections for qq in sec.questions.all()]
-    q_ids = [qq.id for qq in flat_questions]
-    if next_qid not in q_ids:
-        next_qid = q_ids[0] if q_ids else q.pk
+    ctx = build_attempt_question_context(attempt, next_q_id)
+    if not ctx:
+        return redirect("customer:attempt_review", attempt_id=attempt.pk)
 
-    qa_qs = (
-        QuestionAttempt.objects
-        .filter(section_attempt__attempt=attempt)
-        .select_related("question", "section_attempt")
-    )
-    qa_by_qid = {qa.question_id: qa for qa in qa_qs}
-    answered_q_ids = {qa.question_id for qa in qa_by_qid.values() if qa.is_answered}
-
-    next_qa = qa_by_qid.get(next_qid)
-    if not next_qa:
-        next_qa = QuestionAttempt.objects.get(section_attempt__attempt=attempt, question_id=next_qid)
-
-    selected_set = set(
-        MCQSelection.objects
-        .filter(question_attempt=next_qa)
-        .values_list("option_id", flat=True)
-    )
-
-    idx = q_ids.index(next_qid)
-    prev_qid = q_ids[idx - 1] if idx > 0 else None
-    next2_qid = q_ids[idx + 1] if idx < len(q_ids) - 1 else None
-
-    # current section (material көрсету үшін)
-    current_section = None
-    for s in sections:
-        if s.id == next_qa.question.section_id:
-            current_section = s
-            break
-
+    ctx["saved"] = True
     html = render_to_string(
-        "app/main/attempt/partials/question_panel.html",
-        {
-            "attempt": attempt,
-            "sections": sections,
-            "flat_questions": flat_questions,
-            "answered_q_ids": answered_q_ids,
-
-            "q": next_qa.question,
-            "qa": next_qa,
-            "selected_set": selected_set,
-
-            "prev_qid": prev_qid,
-            "next_qid": next2_qid,
-            "q_index": idx + 1,
-            "q_total": len(q_ids),
-
-            "current_section": current_section,
-            "saved": True,
-        },
+        "app/main/attempt/partials/_question_wrapper.html",
+        ctx,
         request=request,
     )
-    return HttpResponse(html)
+    resp = HttpResponse(html)
+    resp["HX-Push-Url"] = reverse(
+        "customer:attempt_question",
+        args=[attempt.pk]
+    ) + f"?q={next_q_id}"
+
+    return resp
 
 
-# ======================================================================================================================
-# SPEAKING UPLOAD (HTMX friendly)
+# SPEAKING UPLOAD
 # ======================================================================================================================
 @require_POST
 @transaction.atomic
@@ -249,55 +193,60 @@ def attempt_speaking_upload_view(request, attempt_id: int, question_id: int):
     if attempt.status != AttemptStatus.IN_PROGRESS:
         return redirect("customer:attempt_review", attempt_id=attempt.pk)
 
-    qa = get_object_or_404(QuestionAttempt, section_attempt__attempt=attempt, question_id=question_id)
+    qa = get_object_or_404(
+        QuestionAttempt,
+        section_attempt__attempt=attempt,
+        question_id=question_id
+    )
     q = qa.question
 
     if q.question_type != "speaking_keywords":
         return redirect("customer:attempt_detail", attempt_id=attempt.pk)
 
+    existing = SpeakingAnswer.objects.filter(question_attempt=qa).first()
+    if qa.is_answered or (existing and existing.audio):
+        if is_hx(request):
+            html = render_to_string(
+                "app/main/attempt/partials/_question_wrapper.html",
+                build_attempt_question_context(attempt, q.id) | {"saved": True, "already_submitted": True},
+                request=request,
+            )
+            resp = HttpResponse(html)
+            resp["HX-Push-Url"] = reverse("customer:attempt_question", args=[attempt.pk]) + f"?q={q.id}"
+            return resp
+        return redirect("customer:attempt_question", attempt_id=attempt.pk)
+
     audio_file = request.FILES.get("audio")
     if not audio_file:
-        return redirect("customer:attempt_detail", attempt_id=attempt.pk)
-
-    rubric = get_object_or_404(SpeakingRubric, question=q)
+        return HttpResponseBadRequest("Audio file is required")
 
     sa, _ = SpeakingAnswer.objects.get_or_create(question_attempt=qa)
     sa.audio = audio_file
-    sa.save(update_fields=["audio"])
+    sa.transcript = ""
+    sa.matched_keywords = []
+    sa.matched_count = 0
+    sa.save(update_fields=["audio", "transcript", "matched_keywords", "matched_count"])
 
-    transcript = transcribe_audio(sa.audio.path)
-    matched = match_keywords(transcript, rubric.keywords)
-    points = score_speaking(matched, rubric.point_per_keyword, rubric.max_points)
-
-    sa.transcript = transcript
-    sa.matched_keywords = matched
-    sa.matched_count = len(matched)
-    sa.save(update_fields=["transcript", "matched_keywords", "matched_count"])
-
-    qa.max_score = rubric.max_points
-    qa.score = points
     qa.is_answered = True
-    qa.is_graded = True
-    qa.answer_json = {
-        "type": "speaking_keywords",
-        "transcript": transcript,
-        "matched_keywords": matched,
-    }
-    qa.save(update_fields=["max_score", "score", "is_answered", "is_graded", "answer_json"])
+    qa.is_graded = False
+    qa.score = 0
+    qa.answer_json = {"type": "speaking_keywords", "submitted": True}
+    qa.save(update_fields=["is_answered", "is_graded", "score", "answer_json"])
 
     if is_hx(request):
-        html = render_to_string(
-            "app/main/attempt/partials/question_card.html",
-            {"mode": "take", "attempt": attempt, "q": q, "qa": qa, "saved": True, "selected_set": set()},
-            request=request,
-        )
-        return HttpResponse(html)
+        ctx = build_attempt_question_context(attempt, q.id)
+        ctx["saved"] = True
+        ctx["speaking_submitted"] = True
 
-    return redirect("customer:attempt_detail", attempt_id=attempt.pk)
+        html = render_to_string("app/main/attempt/partials/_question_wrapper.html", ctx, request=request)
+        resp = HttpResponse(html)
+        resp["HX-Push-Url"] = reverse("customer:attempt_question", args=[attempt.pk]) + f"?q={q.id}"
+        return resp
+
+    return redirect("customer:attempt_question", attempt_id=attempt.pk)
 
 
-# ======================================================================================================================
-# WRITING SUBMIT (HTMX friendly)
+# WRITING SUBMIT
 # ======================================================================================================================
 @require_POST
 @transaction.atomic
@@ -308,36 +257,55 @@ def attempt_writing_submit_view(request, attempt_id: int, question_id: int):
     if attempt.status != AttemptStatus.IN_PROGRESS:
         return redirect("customer:attempt_review", attempt_id=attempt.pk)
 
-    qa = get_object_or_404(QuestionAttempt, section_attempt__attempt=attempt, question_id=question_id)
+    qa = get_object_or_404(
+        QuestionAttempt,
+        section_attempt__attempt=attempt,
+        question_id=question_id
+    )
+    if qa.is_answered:
+        if is_hx(request):
+            ctx = build_attempt_question_context(attempt, qa.question_id)
+            ctx["saved"] = True
+            html = render_to_string("app/main/attempt/partials/_question_wrapper.html", ctx, request=request)
+
+            resp = HttpResponse(html)
+            resp["HX-Push-Url"] = reverse("customer:attempt_question", args=[attempt.pk]) + f"?q={qa.question_id}"
+            return resp
+
+        return redirect("customer:attempt_question", attempt_id=attempt.pk)
 
     output_text = (request.POST.get("output_text") or "").strip()
     code_text = request.POST.get("code") or ""
+
+    if not output_text and not code_text:
+        return HttpResponseBadRequest("Empty submission")
 
     sub, _ = WritingSubmission.objects.get_or_create(question_attempt=qa)
     sub.code = code_text
     sub.output_text = output_text
     sub.save(update_fields=["code", "output_text"])
 
-    is_correct = grade_writing_submission(sub)
-
     qa.is_answered = True
-    qa.is_graded = True
-    qa.score = qa.max_score if is_correct else 0
-    qa.save(update_fields=["is_answered", "is_graded", "score"])
+    qa.is_graded = False
+    qa.score = 0
+    qa.answer_json = {"type": "writing", "submitted": True}
+    qa.save(update_fields=["is_answered", "is_graded", "score", "answer_json"])
 
     if is_hx(request):
-        html = render_to_string(
-            "app/main/attempt/partials/question_card.html",
-            {"mode": "take", "attempt": attempt, "q": qa.question, "qa": qa, "saved": True},
-            request=request,
-        )
-        return HttpResponse(html)
+        ctx = build_attempt_question_context(attempt, qa.question_id)
+        ctx["saved"] = True
+        ctx["writing_submitted"] = True
 
-    return redirect("customer:attempt_detail", attempt_id=attempt.pk)
+        html = render_to_string("app/main/attempt/partials/_question_wrapper.html", ctx, request=request)
+
+        resp = HttpResponse(html)
+        resp["HX-Push-Url"] = reverse("customer:attempt_question", args=[attempt.pk]) + f"?q={qa.question_id}"
+        return resp
+
+    return redirect("customer:attempt_question", attempt_id=attempt.pk)
 
 
-# ======================================================================================================================
-# SUBMIT + REVIEW (as before)
+# SUBMIT + REVIEW
 # ======================================================================================================================
 @require_POST
 @role_required("customer")
@@ -346,10 +314,14 @@ def attempt_submit_view(request, attempt_id: int):
     if attempt.status != AttemptStatus.IN_PROGRESS:
         return redirect("customer:attempt_review", attempt_id=attempt.pk)
 
+    grade_pending_open_questions(attempt)
     finish_attempt_auto(attempt)
     return redirect("customer:attempt_review", attempt_id=attempt.pk)
 
 
+# ======================================================================================================================
+# attempt review page
+# ======================================================================================================================
 @require_GET
 @role_required("customer")
 def attempt_review_view(request, attempt_id: int):

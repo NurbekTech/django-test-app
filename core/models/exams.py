@@ -60,7 +60,6 @@ class SectionMaterial(models.Model):
     text = models.TextField(_("Мәтін"), blank=True, null=True)
     audio = models.FileField(_("Аудиожазба"), upload_to="exams/sounds/", blank=True, null=True)
     time_limit_seconds = models.PositiveSmallIntegerField(_("Уақыты (сек)"), default=0)
-    order = models.PositiveSmallIntegerField(_("Реттілік"), default=1)
 
     class Meta:
         verbose_name = _("Секция материалы")

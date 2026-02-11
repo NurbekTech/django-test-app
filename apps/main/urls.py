@@ -21,7 +21,7 @@ urlpatterns = [
 
     # attempt urls...
     path("attempts/<int:attempt_id>/", attempt.attempt_detail_view, name="attempt_detail"),
-    path("attempts/<int:attempt_id>/take/", attempt.attempt_question_view, name="attempt_question"),
+    path("attempts/<int:attempt_id>/question/", attempt.attempt_question_view, name="attempt_question"),
 
     # HTMX save (question_id URL-да!)
     path("attempts/<int:attempt_id>/q/<int:question_id>/answer/", attempt.attempt_answer_view, name="attempt_answer"),

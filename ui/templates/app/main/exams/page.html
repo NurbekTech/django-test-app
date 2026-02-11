@@ -11,45 +11,52 @@
     {% if exams %}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for exam in exams %}
-                <div class="grid gap-2 bg-white rounded-2xl p-4 border border-border-200 hover:shadow-md transition">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="grid">
-                            <h4 class="text-lg font-semibold leading-snug">{{ exam.title }}</h4>
+                <div class="grid gap-2 bg-white rounded-2xl border border-border-200 overflow-hidden hover:shadow-md transition">
+                    <div class="flex justify-center items-center py-8 bg-secondary-100">
+                        <svg class="w-12 h-12 text-muted" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
+                            height="24" fill="none" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 4h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3m0 3h6m-3 5h3m-6 0h.01M12 16h3m-6 0h.01M10 3v4h4V3h-4Z" />
+                        </svg>
+                    </div>
+                    <div class="grid gap-3 p-4">
+                        <div class="relative">
+                            <h4 class="text-base font-semibold leading-snug">{{ exam.title }}</h4>
                             <div class="mt-2 flex flex-wrap items-center gap-4 text-muted">
-                                <span class="inline-flex items-center gap-2">
-                                    <!-- sections icon -->
-                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                                        <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <div class="inline-flex items-center gap-1">
+                                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
+                                        height="24" fill="none" viewBox="0 0 24 24">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-width="2"
+                                            d="M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5" />
                                     </svg>
-                                    {{ exam.section_count }} секция
-                                </span>
+                                    <span>{{ exam.section_count }} секция</span>
+                                </div>
                             
-                                <span class="inline-flex items-center gap-2">
-                                    <!-- questions icon -->
-                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                                        <path d="M7 8h10M7 12h6M7 16h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                        <path d="M6 4h12a2 2 0 0 1 2 2v12l-3-3H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" stroke="currentColor"
-                                            stroke-width="2" stroke-linejoin="round" />
+                                <div class="inline-flex items-center gap-2">
+                                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
+                                        height="24" fill="none" viewBox="0 0 24 24">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9.529 9.988a2.502 2.502 0 1 1 5 .191A2.441 2.441 0 0 1 12 12.582V14m-.01 3.008H12M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                     </svg>
-                                    {{ exam.question_count }} сұрақ
-                                </span>
+                                    <span>{{ exam.question_count }} сұрақ</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="grid grid-cols-2 gap-2">
-                        <a 
-                            href="{% url 'customer:exam_detail' exam.id %}"
-                            class="flex justify-center border border-border-200 focus:outline-none transition-all bg-white hover:bg-secondary-100 focus:ring-3 focus:ring-secondary-300 font-medium rounded-xl px-5 py-2.5"
-                        >
-                            Толығырақ
-                        </a>
-                        <a 
-                            href="{% url 'customer:exam_start' exam.id %}"
-                            class="flex justify-center focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
-                        >
-                            {% if exam.is_registered %}Жалғастыру{% else %}Тестілеуді бастау{% endif %}
-                        </a>
+                        <div class="grid grid-cols-2 gap-2">
+                            <a 
+                                href="{% url 'customer:exam_detail' exam.id %}"
+                                class="flex justify-center border border-border-200 focus:outline-none transition-all bg-white hover:bg-secondary-100 focus:ring-3 focus:ring-secondary-300 font-medium rounded-xl px-5 py-2.5"
+                            >
+                                Толығырақ
+                            </a>
+                            <a 
+                                href="{% url 'customer:exam_start' exam.id %}"
+                                class="flex justify-center focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
+                            >
+                                {% if exam.is_registered %}Жалғастыру{% else %}Тестілеуді бастау{% endif %}
+                            </a>
+                        </div>
                     </div>
                 </div>
             {% endfor %}

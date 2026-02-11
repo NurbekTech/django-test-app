@@ -1,10 +1,14 @@
 from decimal import Decimal
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Sum, Prefetch
 from django.shortcuts import get_object_or_404
+
+from apps.main.services.speaking import score_speaking, match_keywords, transcribe_audio
+from apps.main.services.writing import grade_writing_submission
+from core.models import Question, SpeakingRubric
 from core.models.attempts import (
     ExamAttempt, SectionAttempt, QuestionAttempt,
-    AttemptStatus, MCQSelection,
+    AttemptStatus, MCQSelection, WritingSubmission, SpeakingAnswer,
 )
 
 
@@ -170,3 +174,128 @@ def finish_attempt_auto(attempt: ExamAttempt) -> None:
 
     attempt.status = AttemptStatus.FINISHED
     attempt.save(update_fields=["status"])
+
+
+# build_attempt_question_context
+def build_attempt_question_context(attempt, current_qid: int):
+    sections = (
+        attempt.exam.sections
+        .all()
+        .order_by("order")
+        .select_related("material")
+        .prefetch_related(
+            Prefetch(
+                "questions",
+                queryset=Question.objects.order_by("order").prefetch_related("options"),
+            )
+        )
+    )
+
+    flat_questions = [qq for sec in sections for qq in sec.questions.all()]
+    q_ids = [qq.id for qq in flat_questions]
+    if not q_ids:
+        return None
+
+    if current_qid not in q_ids:
+        current_qid = q_ids[0]
+
+    qa_qs = (
+        QuestionAttempt.objects
+        .filter(section_attempt__attempt=attempt)
+        .select_related("question", "section_attempt")
+    )
+    qa_by_q_id = {qa.question_id: qa for qa in qa_qs}
+    qa = qa_by_q_id.get(current_qid)
+    if not qa:
+        qa = QuestionAttempt.objects.get(section_attempt__attempt=attempt, question_id=current_qid)
+
+    q = qa.question
+
+    current_section = None
+    for sec in sections:
+        if sec.id == q.section_id:
+            current_section = sec
+            break
+
+    selected_set = set(
+        MCQSelection.objects
+        .filter(question_attempt=qa)
+        .values_list("option_id", flat=True)
+    )
+
+    answered_q_ids = {x.question_id for x in qa_by_q_id.values() if x.is_answered}
+
+    idx = q_ids.index(current_qid)
+    prev_q_id = q_ids[idx - 1] if idx > 0 else None
+    next_q_id = q_ids[idx + 1] if idx < len(q_ids) - 1 else None
+
+    return {
+        "attempt": attempt,
+        "flat_questions": flat_questions,
+        "answered_q_ids": answered_q_ids,
+        "current_section": current_section,
+
+        "q": q,
+        "qa": qa,
+        "selected_set": selected_set,
+
+        "prev_q_id": prev_q_id,
+        "next_q_id": next_q_id,
+        "q_index": idx + 1,
+        "q_total": len(q_ids),
+        "is_last": next_q_id is None,
+    }
+
+
+# grade_pending_open_questions
+def grade_pending_open_questions(attempt):
+    qa_qs = (
+        QuestionAttempt.objects
+        .filter(section_attempt__attempt=attempt, is_answered=True, is_graded=False)
+        .select_related("question", "section_attempt")
+    )
+
+    for qa in qa_qs:
+        q = qa.question
+
+        if q.question_type == "speaking_keywords":
+            sa = SpeakingAnswer.objects.filter(question_attempt=qa).first()
+            if not sa or not sa.audio:
+                continue
+
+            rubric = SpeakingRubric.objects.filter(question=q).first()
+            if not rubric:
+                continue
+
+            transcript = transcribe_audio(sa.audio.path)
+            matched = match_keywords(transcript, rubric.keywords)
+            points = score_speaking(matched, rubric.point_per_keyword, rubric.max_points)
+
+            sa.transcript = transcript
+            sa.matched_keywords = matched
+            sa.matched_count = len(matched)
+            sa.save(update_fields=["transcript", "matched_keywords", "matched_count"])
+
+            qa.max_score = rubric.max_points
+            qa.score = points
+            qa.is_graded = True
+            qa.answer_json = {
+                "type": "speaking_keywords",
+                "transcript": transcript,
+                "matched_keywords": matched,
+            }
+            qa.save(update_fields=["max_score", "score", "is_graded", "answer_json"])
+
+        # --- WRITING ---
+        elif q.question_type == "writing":
+            sub = WritingSubmission.objects.filter(question_attempt=qa).first()
+            if not sub:
+                continue
+
+            is_correct = grade_writing_submission(sub)
+
+            # max_score сенде already бар деп қабылдаймын; жоқ болса 1 қылып қоюға болады
+            qa.score = qa.max_score if is_correct else 0
+            qa.is_graded = True
+            qa.answer_json = {"type": "writing", "correct": bool(is_correct)}
+            qa.save(update_fields=["score", "is_graded", "answer_json"])
