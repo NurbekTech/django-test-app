@@ -1,8 +1,9 @@
 from django.contrib import messages
-from django.db.models import OuterRef, Exists, Prefetch, Subquery, IntegerField, Value
+from django.db.models import OuterRef, Exists, Prefetch, Subquery, IntegerField, Value, F, ExpressionWrapper, FloatField
 from django.db.models.aggregates import Avg, Count, Sum
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Cast, NullIf
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
 from core.utils.decorators import role_required
 from core.models import ExamAttempt, SectionAttempt, Exam, Section, Question, AttemptStatus
 
@@ -21,22 +22,37 @@ def customer_dashboard_view(request):
         ExamAttempt.objects
         .filter(user=user)
         .exclude(total_score__isnull=True)
-        .aggregate(avg=Avg("total_score"))
+        .exclude(max_total_score__isnull=True)
+        .annotate(
+            percent=ExpressionWrapper(
+                Cast(F("total_score"), FloatField()) * Value(100.0) / NullIf(Cast(F("max_total_score"), FloatField()), 0.0),
+                output_field=FloatField(),
+            )
+        )
+        .aggregate(avg=Avg("percent"))
         .get("avg")
     )
     section_avg_qs = (
         SectionAttempt.objects
         .filter(attempt__user=user)
         .exclude(score__isnull=True)
+        .exclude(max_score__isnull=True)
+        .annotate(
+            percent=ExpressionWrapper(
+                Cast(F("score"), FloatField()) * Value(100.0) / NullIf(Cast(F("max_score"), FloatField()), 0.0),
+                output_field=FloatField(),
+            )
+        )
         .values("section__section_type")
-        .annotate(avg=Avg("score"))
+        .annotate(avg=Avg("percent"))
     )
     section_avg_s = {row["section__section_type"]: row["avg"] for row in section_avg_qs}
+
     SECTION_KEYS = [
         ("listening", "Тыңдалым (Listening)"),
         ("reading", "Оқылым (Reading)"),
-        ("writing", "Жазылым (Writing)"),
         ("speaking", "Айтылым (Speaking)"),
+        ("writing", "Жазылым (Writing)"),
     ]
     section_progress = []
     for key, label in SECTION_KEYS:
@@ -66,7 +82,7 @@ def customer_exams_view(request):
     )
     exams = (
         Exam.objects
-        .all()
+        .filter(is_published=True)
         .order_by("-id")
         .annotate(
             is_registered=Exists(user_has_attempt),
@@ -82,7 +98,6 @@ def customer_exams_view(request):
 @role_required("customer")
 def customer_exam_detail_view(request, exam_id: int):
     user = request.user
-
     section_sum_time_sq = (
         Section.objects
         .filter(exam_id=OuterRef("pk"))
@@ -104,7 +119,6 @@ def customer_exam_detail_view(request, exam_id: int):
         .annotate(total=Count("id"))
         .values("total")[:1]
     )
-
     exam_qs = (
         Exam.objects
         .annotate(
@@ -126,16 +140,15 @@ def customer_exam_detail_view(request, exam_id: int):
         )
     )
     exam = get_object_or_404(exam_qs, pk=exam_id)
-    active_attempt = (
+    attempt = (
         ExamAttempt.objects
         .filter(user=user, exam=exam)
-        .exclude(status=AttemptStatus.FINISHED)
         .order_by("-id")
         .first()
     )
     context = {
         "exam": exam,
-        "active_attempt": active_attempt,
+        "attempt": attempt,
     }
     return render(request, "app/main/exams/detail/page.html", context)
 
@@ -147,33 +160,37 @@ def customer_exam_start_view(request, exam_id: int):
     user = request.user
     exam = get_object_or_404(Exam, pk=exam_id)
 
+    has_questions = Question.objects.filter(section__exam=exam).exists()
+    if not has_questions:
+        messages.warning(
+            request,
+            "Бұл тестте әлі сұрақтар жоқ. Кейінірек қайта тексеріңіз."
+        )
+        return redirect("customer:exam_detail", exam.pk)
+
     locked_attempt = (
         ExamAttempt.objects
         .select_related("exam")
         .filter(user=user, status=AttemptStatus.IN_PROGRESS)
-        .exclude(exam_id=exam.pk)
-        .order_by("-id")
+        .exclude(exam=exam)
         .first()
     )
     if locked_attempt:
         messages.warning(
             request,
-            f"Сізде аяқталмаған тест бар: «{locked_attempt.exam.title}». Алдымен соны аяқтаңыз."
+            f"Сізде аяқталмаған тест бар: «{locked_attempt.exam.title}». "
+            "Алдымен соны аяқтаңыз."
         )
         return redirect("customer:attempt_detail", locked_attempt.pk)
 
-    active_attempt = (
-        ExamAttempt.objects
-        .filter(user=user, exam=exam, status=AttemptStatus.IN_PROGRESS)
-        .order_by("-id")
-        .first()
-    )
-    if active_attempt:
-        return redirect("customer:attempt_detail", active_attempt.pk)
+    attempt = ExamAttempt.objects.filter(user=user, exam=exam).first()
+    if attempt:
+        return redirect("customer:attempt_detail", attempt.pk)
 
     attempt = ExamAttempt.objects.create(
         user=user,
         exam=exam,
         status=AttemptStatus.IN_PROGRESS,
+        started_at=timezone.now(),
     )
     return redirect("customer:attempt_detail", attempt.pk)

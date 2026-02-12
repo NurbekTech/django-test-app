@@ -48,8 +48,8 @@
             </div>
 
             <div class="w-full lg:max-w-64 space-y-4">
-                <div class="flex justify-center items-center py-8 bg-secondary-100 rounded-xl">
-                    <svg class="w-12 h-12 text-muted" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
+                <div class="flex justify-center items-center py-4 bg-secondary-100 rounded-xl">
+                    <svg class="w-6 h-6 text-muted" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24"
                         height="24" fill="none" viewBox="0 0 24 24">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M15 4h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3m0 3h6m-3 5h3m-6 0h.01M12 16h3m-6 0h.01M10 3v4h4V3h-4Z" />
@@ -57,20 +57,23 @@
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    {% if active_attempt %}
+                    {% if attempt %}
                         <a
-                            href="{% url 'customer:attempt_detail' active_attempt.id %}"
+                            href="{% url 'customer:attempt_detail' attempt.id %}"
                             class="flex justify-center text-sm focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
                         >
-                            Жалғастыру
+                            Тестілеуге кіру
                         </a>
                     {% else %}
-                        <a 
-                            href="{% url 'customer:exam_start' exam.id %}"
-                            class="flex justify-center text-sm focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
-                        >
-                            Тестілеуді бастау
-                        </a>
+                        <form method="post" action="{% url 'customer:exam_start' exam.id %}">
+                            {% csrf_token %}
+                            <button
+                                type="submit"
+                                class="w-full flex justify-center text-sm focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
+                            >
+                                Тестілеуді бастау
+                            </button>
+                        </form>
                     {% endif %}
 
                     <a 

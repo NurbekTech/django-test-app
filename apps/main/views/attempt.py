@@ -6,6 +6,8 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils import timezone
+
 from core.utils.decorators import role_required
 from django.views.decorators.http import require_GET, require_POST
 from apps.main.services.attempt import ensure_attempt_initialized, save_mcq_answer_only, load_attempt_for_user, \
@@ -98,6 +100,13 @@ def attempt_question_view(request, attempt_id: int):
         qa_by_q_id[current_qid] = current_qa
 
     current_q = current_qa.question
+    sa = current_qa.section_attempt
+    if sa.status == AttemptStatus.NO_STARTED:
+        sa.status = AttemptStatus.IN_PROGRESS
+        if not sa.started_at:
+            sa.started_at = timezone.now()
+        sa.save(update_fields=["status", "started_at"])
+
     current_section = None
     for sec in sections:
         if sec.id == current_q.section_id:

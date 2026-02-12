@@ -23,28 +23,28 @@
         <div class="grid gap-4 w-full max-w-4xl mx-auto">
             <div id="section-material">
                 {% if current_section and current_section.material %}
-                <div class="border border-border-200 rounded-2xl p-4">
-                    <div class="text-lg font-semibold">
-                        {{ current_section.get_section_type_display }}
+                    <div class="border border-border-200 rounded-2xl p-4">
+                        <div class="text-lg font-semibold">
+                            {{ current_section.get_section_type_display }}
+                        </div>
+            
+                        {% if current_section.material.text %}
+                            <div class="mt-4 whitespace-pre-line">
+                                {{ current_section.material.text|safe }}
+                            </div>
+                        {% endif %}
+            
+                        {% if current_section.material.audio %}
+                            <div class="mt-4">
+                                <audio controls class="w-full">
+                                    <source src="{{ current_section.material.audio.url }}" />
+                                </audio>
+                            </div>
+                        {% endif %}
                     </div>
-
-                    {% if current_section.material.text %}
-                        <div class="mt-4 whitespace-pre-line">
-                            {{ current_section.material.text|safe }}
-                        </div>
-                    {% endif %}
-
-                    {% if current_section.material.audio %}
-                        <div class="mt-4">
-                            <audio controls class="w-full">
-                                <source src="{{ current_section.material.audio.url }}">
-                            </audio>
-                        </div>
-                    {% endif %}
-                </div>
                 {% endif %}
             </div>
-
+        
             <div id="question-panel" class="grid gap-4 border border-border-200 rounded-2xl p-4">
                 <div class="flex items-center justify-between">
                     <div class="font-medium text-muted">Сұрақ {{ q_index }} / {{ q_total }}</div>
@@ -57,91 +57,122 @@
                         </svg>
                     {% endif %}
                 </div>
-
+        
                 <div class="flex gap-2 items-start text-base font-semibold">
                     <span>{{ q.order }}.</span>
                     <div>{{ q.prompt|safe }}</div>
                 </div>
-
+        
                 {% if q.question_type == "mcq_single" or q.question_type == "mcq_multi" %}
-                    <form
-                        hx-post="{% url 'customer:attempt_answer' attempt.id q.id %}"
+                    <form 
+                        hx-post="{% url 'customer:attempt_answer' attempt.id q.id %}" 
                         hx-target="#question-wrapper"
                         hx-swap="outerHTML"
                     >
                         {% csrf_token %}
                         <input type="hidden" name="next_qid" value="{{ next_q_id|default:'' }}">
-
+            
                         {% include "app/main/attempt/partials/question_block.html" with q=q selected_set=selected_set qa=qa attempt=attempt %}
-
+            
                         <div class="mt-4 flex items-center justify-between">
-                        {# Back: hx-get #}
-                        {% if prev_q_id %}
-                            <button type="button"
-                            hx-get="{% url 'customer:attempt_question' attempt.id %}?q={{ prev_q_id }}"
-                            hx-target="#question-wrapper"
-                            hx-swap="outerHTML"
-                            hx-push-url="true"
-                            class="px-4 py-2 rounded-xl border"
-                            >Артқа</button>
-                        {% else %}
-                            <button type="button" disabled class="px-4 py-2 rounded-xl border opacity-40">Артқа</button>
-                        {% endif %}
-
-                        {# Next: submit осы form арқылы #}
-                        {% if next_q_id %}
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-primary-600 text-white">Келесі</button>
-                        {% else %}
-                            {# Соңғы сұрақта “аяқтау” — бөлек form болуы керек (төменде) #}
-                            <button type="button" disabled class="px-4 py-2 rounded-xl bg-primary-200 text-white opacity-60">
-                            Келесі
-                            </button>
-                        {% endif %}
+                            {% if prev_q_id %}
+                                <button 
+                                    type="button" 
+                                    hx-get="{% url 'customer:attempt_question' attempt.id %}?q={{ prev_q_id }}"
+                                    hx-target="#question-wrapper" 
+                                    hx-swap="outerHTML" 
+                                    hx-push-url="true"
+                                    class="flex justify-center border border-border-200 text-sm focus:outline-none transition-all cursor-pointer bg-white hover:bg-secondary-100 focus:ring-3 focus:ring-secondary-300 font-medium rounded-xl px-5 py-2.5"
+                                >
+                                    Артқа
+                                </button>
+                            {% else %}
+                                <button 
+                                    type="button" 
+                                    disabled 
+                                    class="flex justify-center border border-border-200 text-muted focus:outline-none transition-all bg-secondary-100 font-medium rounded-xl px-5 py-2.5 cursor-not-allowed"
+                                >
+                                    Артқа
+                                </button>
+                            {% endif %}
+            
+                            {% if next_q_id %}
+                                <button 
+                                    type="submit" 
+                                    class="flex justify-center cursor-pointer focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
+                                >
+                                    Келесі
+                                </button>
+                            {% else %}
+                                <button 
+                                    type="button" 
+                                    disabled 
+                                    class="flex justify-center cursor-not-allowed focus:outline-none transition-all text-white bg-primary-600/50 font-medium rounded-xl px-5 py-2.5"
+                                >
+                                    Келесі
+                                </button>
+                            {% endif %}
                         </div>
                     </form>
-
                 {% else %}
-
-                    {# Speaking/Writing: өз формалары question_block ішінде болады #}
                     {% include "app/main/attempt/partials/question_block.html" with q=q selected_set=selected_set qa=qa attempt=attempt %}
-
                     <div class="mt-4 flex items-center justify-between">
                         {% if prev_q_id %}
-                        <button type="button"
-                            hx-get="{% url 'customer:attempt_question' attempt.id %}?q={{ prev_q_id }}"
-                            hx-target="#question-wrapper"
-                            hx-swap="outerHTML"
-                            hx-push-url="true"
-                            class="px-4 py-2 rounded-xl border"
-                        >Артқа</button>
+                            <button 
+                                type="button" 
+                                hx-get="{% url 'customer:attempt_question' attempt.id %}?q={{ prev_q_id }}"
+                                hx-target="#question-wrapper" 
+                                hx-swap="outerHTML" 
+                                hx-push-url="true"
+                                class="flex justify-center border border-border-200 text-sm focus:outline-none transition-all cursor-pointer bg-white hover:bg-secondary-100 focus:ring-3 focus:ring-secondary-300 font-medium rounded-xl px-5 py-2.5"
+                            >
+                                Артқа
+                            </button>
                         {% else %}
-                        <button type="button" disabled class="px-4 py-2 rounded-xl border opacity-40">Артқа</button>
+                            <button 
+                                type="button" 
+                                disabled 
+                                class="flex justify-center border border-border-200 text-muted focus:outline-none transition-all bg-secondary-100 font-medium rounded-xl px-5 py-2.5 cursor-not-allowed"
+                            >
+                                Артқа
+                            </button>
                         {% endif %}
-
+            
                         {% if next_q_id %}
-                        <button type="button"
-                            hx-get="{% url 'customer:attempt_question' attempt.id %}?q={{ next_q_id }}"
-                            hx-target="#question-wrapper"
-                            hx-swap="outerHTML"
-                            hx-push-url="true"
-                            class="px-4 py-2 rounded-xl bg-primary-600 text-white"
-                        >Келесі</button>
+                            <button 
+                                type="button" 
+                                hx-get="{% url 'customer:attempt_question' attempt.id %}?q={{ next_q_id }}"
+                                hx-target="#question-wrapper" 
+                                hx-swap="outerHTML" 
+                                hx-push-url="true"
+                                class="flex justify-center cursor-pointer focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
+                            >
+                                Келесі
+                            </button>
                         {% else %}
-                        {# соңғы болса — аяқтау form төменде #}
-                        <button type="button" disabled class="px-4 py-2 rounded-xl bg-primary-200 text-white opacity-60">
-                            Келесі
-                        </button>
+                            <button 
+                                type="button" 
+                                disabled 
+                                class="flex justify-center cursor-not-allowed focus:outline-none transition-all text-white bg-primary-600/50 font-medium rounded-xl px-5 py-2.5"
+                            >
+                                Келесі
+                            </button>
                         {% endif %}
                     </div>
-
                 {% endif %}
-
-                {# ✅ АЯҚТАУ — әрқашан бөлек form (nested болмайды, HTMX ұстамайды) #}
+        
                 {% if is_last %}
-                    <form method="post" action="{% url 'customer:attempt_submit' attempt.id %}" class="mt-4">
+                    <form 
+                        method="post" 
+                        action="{% url 'customer:attempt_submit' attempt.id %}" 
+                        class="flex justify-center"
+                    >
                         {% csrf_token %}
-                        <button type="submit" class="w-full px-4 py-3 rounded-xl bg-indigo-600 text-white font-medium">
-                        Тестті аяқтау
+                        <button 
+                            type="submit" 
+                            class="flex justify-center cursor-pointer focus:outline-none transition-all text-white bg-primary-600 hover:bg-primary-800 focus:ring-3 focus:ring-primary-300 font-medium rounded-xl px-5 py-2.5"
+                        >
+                            Тестті аяқтау
                         </button>
                     </form>
                 {% endif %}

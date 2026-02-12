@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import Sum, Prefetch
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from apps.main.services.speaking import score_speaking, match_keywords, transcribe_audio
 from apps.main.services.writing import grade_writing_submission
@@ -31,7 +32,9 @@ def ensure_attempt_initialized(attempt: ExamAttempt) -> None:
 
     if attempt.status == AttemptStatus.NO_STARTED:
         attempt.status = AttemptStatus.IN_PROGRESS
-        attempt.save(update_fields=["status"])
+        if not attempt.started_at:
+            attempt.started_at = timezone.now()
+        attempt.save(update_fields=["status", "started_at"])
 
     sections = list(
         exam.sections.all().order_by("order").prefetch_related("questions")
@@ -173,7 +176,19 @@ def finish_attempt_auto(attempt: ExamAttempt) -> None:
     grade_attempt_mcq(attempt)
 
     attempt.status = AttemptStatus.FINISHED
-    attempt.save(update_fields=["status"])
+    if not attempt.finished_at:
+        attempt.finished_at = timezone.now()
+    attempt.save(update_fields=["status", "finished_at"])
+
+    now = attempt.finished_at or timezone.now()
+    for sa in attempt.section_attempts.all():
+        if not sa.started_at and attempt.started_at:
+            sa.started_at = attempt.started_at
+        if sa.status != AttemptStatus.FINISHED:
+            sa.status = AttemptStatus.FINISHED
+        if not sa.finished_at:
+            sa.finished_at = now
+        sa.save(update_fields=["status", "started_at", "finished_at"])
 
 
 # build_attempt_question_context
